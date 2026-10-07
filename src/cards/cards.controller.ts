@@ -5,20 +5,15 @@ import { CardsService } from './cards.service';
 @Controller('cards')
 export class CardsController {
 
-    constructor(
-        private readonly cardService : CardsService
-    ){}
+    constructor(private readonly cardService: CardsService) {}
 
 
     @Post('sync')
-    async syncCards() : Promise<SyncCardsResponseDto>{
+    async syncCards(): Promise<SyncCardsResponseDto> {
         await this.cardService.syncCards();
-        return {
-            message: 'Cartas sincronizadas correctamente '
-        }
+
+        return { message: 'Cartas sincronizadas correctamente ' };
+
     }
-
-
-
 
 }
