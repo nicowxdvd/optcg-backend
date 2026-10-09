@@ -4,7 +4,7 @@ import { CardType } from '../enums/card-type.enum';
 
 
 export function isLeaderCard(raw: RawGithubCard): boolean {
-    const category = (raw.category || raw.type || raw.card_type || '').toLowerCase();
+    const category = (raw.type || '').toLowerCase();
     return category === 'leader';
 
 }
@@ -33,6 +33,9 @@ export function parseTraits(rawTraitString: string | undefined): string[] {
 
 export function mapCardType(rawType: string | undefined): CardType {
     const type = (rawType || '').toLowerCase();
+
+    if (type.includes('leader'))
+        return CardType.LEADER;
 
     if (type.includes('event'))
         return CardType.EVENT;

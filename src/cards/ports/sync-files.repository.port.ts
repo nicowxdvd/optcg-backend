@@ -1,4 +1,4 @@
-import { SyncFileEntity } from "../repositories/entities/sync-file.entity";
+import { SyncFileEntity } from '../repositories/entities/sync-file.entity';
 
 export const SYNC_FILE_REPOSITORY = Symbol('SYNC_FILE_REPOSITORY');
 
