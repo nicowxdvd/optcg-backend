@@ -1,5 +1,5 @@
 export const CARD_SET_REPOSITORY = Symbol('CARD_SET_REPOSITORY');
 
 export interface CardSetRepositoryPort{
-    upsertByCode(code:string, name: string) : Promise<number>;
+    upsertByName(name:string, code: string | null) : Promise<number>;
 }

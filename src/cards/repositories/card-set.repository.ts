@@ -12,9 +12,9 @@ export class CardSetRepository implements CardSetRepositoryPort{
         private readonly repository: Repository<CardSetEntity>
     ){}
 
-    async upsertByCode(code: string, name: string): Promise<number> {
-        await this.repository.upsert({code, name}, ['code']);
-        const  cardSet = await this.repository.findOneByOrFail({code})
+    async upsertByName(name: string, code: string | null): Promise<number> {
+        await this.repository.upsert({name, code}, ['name']);
+        const  cardSet = await this.repository.findOneByOrFail({name})
         return cardSet.id;
     }
 }

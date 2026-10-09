@@ -5,10 +5,10 @@ export class CardSetEntity {
     @PrimaryGeneratedColumn()
     id!: number;
 
-    @Column({ type: 'varchar', length: 50, unique: true })
-    code!: string;
+    @Column({ type: 'varchar', length: 50 , nullable: true, unique: true})
+    code!: string | null;
 
-    @Column({ type: 'varchar', length: 255 })
+    @Column({ type: 'varchar', length: 255, unique: true })
     name!: string;
 
     @Column({ name: 'release_date', type: 'timestamp', nullable: true })
