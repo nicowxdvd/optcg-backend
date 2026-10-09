@@ -10,13 +10,13 @@ export class SyncFileEntity {
     fileName!: string;
 
     @Column({ name: 'sync_hash', type: 'char', length: 40, nullable: true })
-    syncHash!: string | null;;
+    syncHash!: string | null;
 
     @Column({ type: 'varchar', length: 20,  default: SyncStatus.PENDING })
     status!: SyncStatus;
 
     @Column({name:'card_count',  type: 'int', nullable: true  })
-    cardCount!: number | null;;
+    cardCount!: number | null;
 
     @Column({name:'last_synced_at',  type: 'datetime', nullable: true  })
     lastSyncedAt!: Date | null;
