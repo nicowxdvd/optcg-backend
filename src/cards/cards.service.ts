@@ -1,7 +1,9 @@
 import { HttpService } from '@nestjs/axios';
-import { Injectable, InternalServerErrorException, Logger } from '@nestjs/common';
+import { Inject, Injectable, InternalServerErrorException, Logger } from '@nestjs/common';
 import { firstValueFrom } from 'rxjs';
 import { GithubRepoFile } from './interfaces/github-repo-file.interfaces';
+import { CARD_SET_REPOSITORY, type CardSetRepositoryPort } from './ports/card-set.repository.port';
+
 
 @Injectable()
 export class CardsService {
@@ -9,7 +11,8 @@ export class CardsService {
     private readonly REPO_FILES_URL  = 'https://api.github.com/repos/apitcg/one-piece-tcg-data/contents/cards/en'
 
     constructor(
-        private readonly httpService: HttpService
+        private readonly httpService: HttpService,
+        @Inject(CARD_SET_REPOSITORY) private readonly cardSets: CardSetRepositoryPort,
     ) {}
 
 
