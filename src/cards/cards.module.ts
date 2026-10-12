@@ -14,7 +14,7 @@ import { TRAIT_REPOSITORY } from './ports/trait.repository.port';
 import { TraitRepository } from './repositories/trait.repository';
 import { CardEntity } from './repositories/entities/card.entity';
 import { CARD_REPOSITORY } from './ports/card.repository.port';
-import { CardRepository } from './repositories/entities/card.repository';
+import { CardRepository } from './repositories/card.repository';
 
 @Module({
   imports     : [HttpModule, TypeOrmModule.forFeature([CardSetEntity, SyncFileEntity, TraitEntity, CardEntity])],
