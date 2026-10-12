@@ -1,4 +1,3 @@
-
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository } from 'typeorm';
@@ -14,15 +13,15 @@ export class TraitRepository implements TraitRepositoryPort{
     ){}
 
 
-    async  findByNames(names: string[]): Promise<TraitEntity[]> {
-        if (!names.length) 
-            return []
+    async findByNames(names: string[]): Promise<TraitEntity[]> {
+        if (!names.length)
+            return [];
 
         return await this.repository.find({
             where:{
                 name: In(names)
             }
-        })
+        });
     }
 
 
@@ -33,8 +32,7 @@ export class TraitRepository implements TraitRepositoryPort{
 
         const uniqueNames = [...new Set(names)];
         await this.repository.upsert(uniqueNames.map((name) => ({ name })), ['name']);
-        return await this.findByNames(uniqueNames)
-        
+        return await this.findByNames(uniqueNames);
     }
 
 
