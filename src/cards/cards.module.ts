@@ -15,9 +15,10 @@ import { TraitRepository } from './repositories/trait.repository';
 import { CardEntity } from './repositories/entities/card.entity';
 import { CARD_REPOSITORY } from './ports/card.repository.port';
 import { CardRepository } from './repositories/card.repository';
+import { LeaderEntity } from './repositories/entities/leader.entity';
 
 @Module({
-  imports     : [HttpModule, TypeOrmModule.forFeature([CardSetEntity, SyncFileEntity, TraitEntity, CardEntity])],
+  imports     : [HttpModule, TypeOrmModule.forFeature([CardSetEntity, SyncFileEntity, TraitEntity, CardEntity, LeaderEntity])],
   controllers : [CardsController],
   providers   : [
     CardsService,
