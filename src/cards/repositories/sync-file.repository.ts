@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { SyncFileRepositoryPort } from '../ports/sync-files.repository.port';
 import { SyncFileEntity } from './entities/sync-file.entity';
+import { SyncStatus } from '../enums/sync-status.enum';
 
 @Injectable()
 export class SyncFileRepository implements SyncFileRepositoryPort{
@@ -20,20 +21,20 @@ export class SyncFileRepository implements SyncFileRepositoryPort{
 
 
 
-    markPending(fileName: string): Promise<void> {
-        return this.repository.update{}
+    async markPending(fileName: string): Promise<void> {
+        await this.repository.upsert({ fileName, status: SyncStatus.PENDING }, ['fileName'])
     }
 
 
 
-    markSynced(fileName: string, syncHash: string, cardCount: number): Promise<void> {
-        throw new Error('Method not implemented.');
+    async markSynced(fileName: string, syncHash: string, cardCount: number): Promise<void> {
+       await this.repository.upsert({fileName, syncHash: syncHash, cardCount: cardCount, status: SyncStatus.OK, lastSyncedAt: new Date(), lastError: null}, ['fileName'])
     }
 
 
 
-    markFailed(fileName: string, error: string): Promise<void> {
-        throw new Error('Method not implemented.');
+    async markFailed(fileName: string, error: string): Promise<void> {
+        await this.repository.upsert({fileName, status: SyncStatus.FAILED, lastError: error}, ['fileName'])
     }
 
 
