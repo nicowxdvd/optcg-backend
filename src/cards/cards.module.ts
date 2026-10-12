@@ -13,6 +13,8 @@ import { TraitEntity } from './repositories/entities/trait.entity';
 import { TRAIT_REPOSITORY } from './ports/trait.repository.port';
 import { TraitRepository } from './repositories/trait.repository';
 import { CardEntity } from './repositories/entities/card.entity';
+import { CARD_REPOSITORY } from './ports/card.repository.port';
+import { CardRepository } from './repositories/entities/card.repository';
 
 @Module({
   imports     : [HttpModule, TypeOrmModule.forFeature([CardSetEntity, SyncFileEntity, TraitEntity, CardEntity])],
@@ -22,6 +24,7 @@ import { CardEntity } from './repositories/entities/card.entity';
     { provide: CARD_SET_REPOSITORY,  useClass: CardSetRepository },
     { provide: SYNC_FILE_REPOSITORY, useClass: SyncFileRepository },
     { provide: TRAIT_REPOSITORY,     useClass: TraitRepository },
+    { provide: CARD_REPOSITORY,      useClass: CardRepository },
   ],
 })
 export class CardsModule {}
