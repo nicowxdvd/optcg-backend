@@ -1,5 +1,7 @@
 import { CardType } from '../../enums/card-type.enum';
-import { Column, CreateDateColumn, Entity, Index, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm';
+import { Column, CreateDateColumn, Entity, Index, JoinColumn, JoinTable, ManyToMany, ManyToOne, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm';
+import { CardSetEntity } from './card-set.entity';
+import { TraitEntity } from './trait.entity';
 
 @Entity('cards')
 export class CardEntity {
@@ -51,4 +53,16 @@ export class CardEntity {
 
     @UpdateDateColumn({ name: 'updated_at' })
     updatedAt!: Date;
+
+    @ManyToOne(() => CardSetEntity, { nullable: false })
+    @JoinColumn({ name: 'set_id' })
+    set!: CardSetEntity;
+
+    @ManyToMany(() => TraitEntity)
+    @JoinTable({
+        name              : 'card_trait',
+        joinColumn        : { name: 'card_id',  referencedColumnName: 'id' },
+        inverseJoinColumn : { name: 'trait_id', referencedColumnName: 'id' }
+    })
+    traits!: TraitEntity[];
 }
