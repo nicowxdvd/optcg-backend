@@ -9,14 +9,18 @@ import { CardSetRepository } from './repositories/card-set.repository';
 import { SyncFileEntity } from './repositories/entities/sync-file.entity';
 import { SYNC_FILE_REPOSITORY } from './ports/sync-files.repository.port';
 import { SyncFileRepository } from './repositories/sync-file.repository';
+import { TraitEntity } from './repositories/entities/trait.entity';
+import { TRAIT_REPOSITORY } from './ports/trait.repository.port';
+import { TraitRepository } from './repositories/trait.repository';
 
 @Module({
-  imports     : [HttpModule, TypeOrmModule.forFeature([CardSetEntity, SyncFileEntity])],
+  imports     : [HttpModule, TypeOrmModule.forFeature([CardSetEntity, SyncFileEntity, TraitEntity])],
   controllers : [CardsController],
   providers   : [
     CardsService,
     { provide: CARD_SET_REPOSITORY,  useClass: CardSetRepository },
     { provide: SYNC_FILE_REPOSITORY, useClass: SyncFileRepository },
+    { provide: TRAIT_REPOSITORY,     useClass: TraitRepository },
   ],
 })
 export class CardsModule {}
