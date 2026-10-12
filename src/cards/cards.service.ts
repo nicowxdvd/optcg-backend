@@ -1,7 +1,7 @@
 import { HttpService } from '@nestjs/axios';
 import { Inject, Injectable, InternalServerErrorException, Logger } from '@nestjs/common';
 import { firstValueFrom } from 'rxjs';
-import { GithubRepoFile } from './interfaces/github-repo-file.interfaces';
+import { GithubRepoFile } from './interfaces/github-repo-file.interface';
 import { CARD_SET_REPOSITORY, type CardSetRepositoryPort } from './ports/card-set.repository.port';
 
 

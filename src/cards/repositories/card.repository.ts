@@ -3,7 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { EntityManager, In, Repository } from 'typeorm';
 import { CardEntity } from './entities/card.entity';
 import { CardRepositoryPort } from 'src/cards/ports/card.repository.port';
-import { CardUpsertInput } from 'src/cards/interfaces/CardUpsertInput';
+import { CardUpsertInput } from '../interfaces/card-upsert-input.interface';
 
 
 
