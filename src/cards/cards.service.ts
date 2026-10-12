@@ -7,7 +7,7 @@ import { CARD_SET_REPOSITORY, type CardSetRepositoryPort } from './ports/card-se
 
 @Injectable()
 export class CardsService {
-    private readonly logger               = new Logger(CardsService.name);
+    private readonly logger          = new Logger(CardsService.name);
     private readonly REPO_FILES_URL  = 'https://api.github.com/repos/apitcg/one-piece-tcg-data/contents/cards/en'
 
     constructor(
