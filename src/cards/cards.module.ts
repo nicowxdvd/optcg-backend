@@ -12,9 +12,10 @@ import { SyncFileRepository } from './repositories/sync-file.repository';
 import { TraitEntity } from './repositories/entities/trait.entity';
 import { TRAIT_REPOSITORY } from './ports/trait.repository.port';
 import { TraitRepository } from './repositories/trait.repository';
+import { CardEntity } from './repositories/entities/card.entity';
 
 @Module({
-  imports     : [HttpModule, TypeOrmModule.forFeature([CardSetEntity, SyncFileEntity, TraitEntity])],
+  imports     : [HttpModule, TypeOrmModule.forFeature([CardSetEntity, SyncFileEntity, TraitEntity, CardEntity])],
   controllers : [CardsController],
   providers   : [
     CardsService,
