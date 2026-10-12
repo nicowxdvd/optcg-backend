@@ -1,6 +1,6 @@
 export enum CardType {
-  LEADER    = 'Leader',
-  CHARACTER = 'Character',
-  EVENT     = 'Event',
-  STAGE     = 'Stage',
+  LEADER    = 'LEADER',
+  CHARACTER = 'CHARACTER',
+  EVENT     = 'EVENT',
+  STAGE     = 'STAGE',
 }
