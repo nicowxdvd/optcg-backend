@@ -13,7 +13,14 @@ export class CardSetRepository implements CardSetRepositoryPort{
     ){}
 
     async upsertByName(name: string, code: string | null): Promise<number> {
-        await this.repository.upsert({name, code}, ['name']);
+        await this.repository.createQueryBuilder()
+                             .insert()
+                             .into(CardSetEntity)
+                             .values({ name, code })
+                             .orUpdate(['code'], ['name'])
+                             .updateEntity(false)
+                             .execute();
+        
         const  cardSet = await this.repository.findOneByOrFail({name})
         return cardSet.id;
     }
