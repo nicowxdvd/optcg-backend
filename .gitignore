@@ -60,3 +60,4 @@ PLAN.md
 databases/
 .claude/.headroom_wrap_marker.json
 tsconfig.tsbuildinfo
+.serena/
