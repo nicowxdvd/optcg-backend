@@ -31,7 +31,14 @@ export class TraitRepository implements TraitRepositoryPort{
             return [];
 
         const uniqueNames = [...new Set(names)];
-        await this.repository.upsert(uniqueNames.map((name) => ({ name })), ['name']);
+        await this.repository.createQueryBuilder()
+                             .insert()
+                             .into(TraitEntity)
+                             .values(uniqueNames.map((name) => ({ name })))
+                             .orIgnore()
+                             .updateEntity(false)
+                             .execute();
+
         return await this.findByNames(uniqueNames);
     }
 
