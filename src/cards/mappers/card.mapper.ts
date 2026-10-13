@@ -58,9 +58,23 @@ export function parseSetCode(setName: string | undefined): string | null {
 
 
 
-export function parseNumber(value: string | number | undefined): number | null {
+export function parseNumber(value: string | number | null | undefined): number | null {
+    if (value === null || value === undefined || value === '')
+        return null;
+
     const parsed = Number(value);
     return Number.isFinite(parsed) ? parsed : null;
+}
+
+
+
+export function requireNumber(value: string | number | null | undefined, field: string, raw: RawGithubCard): number {
+    const parsed = parseNumber(value);
+
+    if (parsed === null)
+        throw new Error(`Carta ${raw.id} sin ${field}`);
+
+    return parsed;
 }
 
 
@@ -95,8 +109,8 @@ export function toLeaderInput(raw: RawGithubCard, setId: number, traitIdByName: 
         name       : raw.name!,
         rarity     : raw.rarity!,
         color      : parseColor(raw.color),
-        life       : parseNumber(raw.cost)!,
-        power      : parseNumber(raw.power)!,
+        life       : requireNumber(raw.cost, 'life', raw),
+        power      : requireNumber(raw.power, 'power', raw),
         attribute  : raw.attribute?.name ?? null,
         effect     : raw.ability || null,
         imageUrl   : parseImageUrl(raw),

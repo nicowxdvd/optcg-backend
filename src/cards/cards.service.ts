@@ -69,6 +69,7 @@ export class CardsService {
     }
 
 
+
     private async syncFile(file:GithubRepoFile): Promise<void> {
         try {
             this.logger.log(`Sincronizando archivo ${file.name}.`);
@@ -113,7 +114,6 @@ export class CardsService {
         this.logger.log(`Descargando ${file.name} desde ${file.download_url}`);
 
         const response = await firstValueFrom(this.httpService.get<RawGithubCard[]>(file.download_url!));
-
         this.logger.log(`Se descargaron ${response.data.length} cartas de ${file.name}.`);
 
         return response.data;
