@@ -6,7 +6,7 @@ import { CARD_SET_REPOSITORY, type CardSetRepositoryPort } from './ports/card-se
 import { SYNC_FILE_REPOSITORY, type SyncFileRepositoryPort } from './ports/sync-files.repository.port';
 import { SyncStatus } from './enums/sync-status.enum';
 import { RawGithubCard } from './interfaces/raw-github-card.interface';
-import { isLeaderCard, parseTraits } from './mappers/card.mapper';
+import { isLeaderCard, parseSetCode, parseTraits, toCardInput, toLeaderInput } from './mappers/card.mapper';
 import { LEADER_REPOSITORY, type LeaderRepositoryPort } from './ports/leader.repository.port';
 import { CARD_REPOSITORY, type CardRepositoryPort } from './ports/card.repository.port';
 import { TRAIT_REPOSITORY, type TraitRepositoryPort } from './ports/trait.repository.port';
@@ -47,39 +47,62 @@ export class CardsService {
 
 
     async syncCards() {
-        const files = await this.fetchRepoFiles();
+        this.logger.log('Iniciando sincronización de cartas.');
+
+        const files   = await this.fetchRepoFiles();
+        let   skipped = 0;
+
         for( const file of files){
             const stored = await this.syncFiles.findByFileName(file.name!)
-            if( stored?.status === SyncStatus.OK && stored.syncHash === file.sha )
+            if( stored?.status === SyncStatus.OK && stored.syncHash === file.sha ){
+                this.logger.log(`Archivo ${file.name} sin cambios, se omite.`);
+                skipped++;
                 continue;
+            }
 
             await this.syncFile(file);
 
         }
+
+        this.logger.log(`Sincronización terminada: ${files.length} archivos, ${skipped} omitidos.`);
 
     }
 
 
     private async syncFile(file:GithubRepoFile): Promise<void> {
         try {
+            this.logger.log(`Sincronizando archivo ${file.name}.`);
             await this.syncFiles.markPending(file.name!);
 
             const raw   = await this.fetchFileCards(file);
-            const setId = await this.cardSets.upsertByName(setName, setCode)
+            if (!raw.length)
+                throw new Error(`Archivo ${file.name} sin cartas`);
+
+            const setName = raw[0].set?.name;
+            if (!setName)
+                throw new Error(`Archivo ${file.name} sin nombre de set`);
+
+            const setCode = parseSetCode(setName);
+            const setId   = await this.cardSets.upsertByName(setName, setCode);
+            this.logger.log(`Set ${setName} (${setCode ?? 'sin código'}) guardado con id ${setId}.`);
 
             const leaders = raw.filter(isLeaderCard);
             const cards   = raw.filter( (c)=> !isLeaderCard(c) );
 
-            const traitNames    = [...new Set(raw.flatMap( (c) => parseTraits(c.sub_type))) ]
+            const traitNames    = [...new Set(raw.flatMap( (c) => parseTraits(c.family))) ]
             const traits        = await this.traits.upsertByNames(traitNames);
             const traitIdByName = new Map(traits.map((t) => [t.name, t.id]));
+            this.logger.log(`${traits.length} traits guardados para ${file.name}.`);
 
             await this.leaders.upsertMany(leaders.map((r) => toLeaderInput(r, setId, traitIdByName)));
             await this.cards.upsertMany(cards.map((r) => toCardInput(r, setId, traitIdByName)));
+            this.logger.log(`${leaders.length} líderes y ${cards.length} cartas guardados para ${file.name}.`);
 
             await this.syncFiles.markSynced(file.name!, file.sha!, raw.length)
-            
+            this.logger.log(`Archivo ${file.name} sincronizado.`);
+
         } catch (error) {
+            this.logger.error(`Falló la sincronización de ${file.name}`, error instanceof Error ? error.stack : String(error));
             await this.syncFiles.markFailed(file.name!, error instanceof Error ? error.message : String(error))
         }
     }
@@ -87,7 +110,12 @@ export class CardsService {
 
 
     private async fetchFileCards(file: GithubRepoFile): Promise<RawGithubCard[]> {
+        this.logger.log(`Descargando ${file.name} desde ${file.download_url}`);
+
         const response = await firstValueFrom(this.httpService.get<RawGithubCard[]>(file.download_url!));
+
+        this.logger.log(`Se descargaron ${response.data.length} cartas de ${file.name}.`);
+
         return response.data;
     }
 
