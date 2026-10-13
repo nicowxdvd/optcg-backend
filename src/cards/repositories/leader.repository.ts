@@ -31,9 +31,18 @@ export class LeaderRepository implements LeaderRepositoryPort{
 
 
     private async upsertLeaders(manager: EntityManager, leaders: LeaderUpsertInput[]): Promise<void> {
-        await manager.getRepository(LeaderEntity).upsert(
-            leaders.map(({ setId, ...leader }) => ({ ...leader, set: { id: setId } })), ['externalId']
-        );
+        const metadata = manager.connection.getMetadata(LeaderEntity);
+        const updatable = metadata.columns
+                                .filter((c) => !c.isPrimary && !c.isCreateDate && c.propertyName !== 'externalId')
+                                .map((c) => c.databaseName);
+
+        await manager.createQueryBuilder()
+                    .insert()
+                    .into(LeaderEntity)
+                    .values(leaders.map(({ setId, ...leader }) => ({ ...leader, set: { id: setId } })))
+                    .orUpdate(updatable, ['external_id'])
+                    .updateEntity(false)
+                    .execute();
     }
 
 

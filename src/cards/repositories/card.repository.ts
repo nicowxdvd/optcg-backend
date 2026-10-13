@@ -32,9 +32,18 @@ export class CardRepository implements CardRepositoryPort{
 
 
     private async upsertCards(manager: EntityManager, cards: CardUpsertInput[]): Promise<void> {
-        await manager.getRepository(CardEntity).upsert(
-            cards.map(({ setId, ...card }) => ({ ...card, set: { id: setId } })), ['externalId']
-        );
+        const metadata = manager.connection.getMetadata(CardEntity);
+        const updatable = metadata.columns
+                                .filter((c) => !c.isPrimary && !c.isCreateDate && c.propertyName !== 'externalId')
+                                .map((c) => c.databaseName);
+
+        await manager.createQueryBuilder()
+                    .insert()
+                    .into(CardEntity)
+                    .values(cards.map(({ setId, ...card }) => ({ ...card, set: { id: setId } })))
+                    .orUpdate(updatable, ['external_id'])
+                    .updateEntity(false)
+                    .execute();
     }
 
 
