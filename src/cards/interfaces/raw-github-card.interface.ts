@@ -1,23 +1,18 @@
 export interface RawGithubCard {
-  code?: string;
-  card_code?: string;
-  name?: string;
-  card_name?: string;
-  category?: string;
-  type?: string;
-  card_type?: string;
-  color?: string | string[];
-  card_color?: string | string[];
-  cost?: number;
-  power?: number;
-  life?: number;
-  counter?: number;
-  counter_value?: number;
-  attribute?: string;
-  effect?: string;
-  text?: string;
-  image_url?: string;
-  src?: string;
-  sub_type?: string;
-  attribute_type?: string;
+  id?        : string,
+  code?      : string;
+  name?      : string;
+  type?      : string;
+  color?     : string | string[];
+  cost?      : number | string;
+  power?     : number | string;
+  counter?   : string | number;
+  attribute? : { name?: string; image?: string };
+  rarity?    : string;
+  family?    : string;
+  ability?   : string;
+  trigger?   : string;
+  images?    : { small?: string; large?: string };
+  set?       : { name?: string };
+  notes?     : unknown[];
 }
