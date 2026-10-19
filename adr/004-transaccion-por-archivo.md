@@ -24,7 +24,7 @@ Hay que decidir dos cosas:
 
 - `run(work)` abre la transacción y le entrega al callback todos los repositorios ya ligados a ella: `{ cardSets, syncFiles, traits, leaders, cards }`.
 - El adaptador `TypeOrmUnitOfWork` usa `DataSource.transaction` y construye cada repositorio con `manager.getRepository(...)`.
-- `CardsService` solo conoce la interfaz, inyectada con el token `UNIT_OF_WORK`.
+- `SyncService` solo conoce la interfaz, inyectada con el token `UNIT_OF_WORK`.
 
 **Se quitó la transacción interna de `upsertMany`** en `LeaderRepository` y `CardRepository`. TypeORM 1.1.1 con MySQL convertía esa transacción anidada en un `SAVEPOINT`. No fallaba, pero dejaba dos límites de transacción en el mismo flujo. Ahora el único límite lo define la unidad de trabajo.
 
@@ -41,11 +41,11 @@ Hay que decidir dos cosas:
 
 - Un archivo se guarda completo o no se guarda. `sync_files` solo dice `SYNCED` si todo el contenido quedó escrito.
 - Un archivo con error no impide sincronizar los demás, y se puede reintentar solo.
-- `CardsService` no conoce TypeORM. En un test se puede reemplazar el `UnitOfWorkPort` por uno falso.
+- `SyncService` no conoce TypeORM. En un test se puede reemplazar el `UnitOfWorkPort` por uno falso.
 
 **En contra**
 
-- El resultado global puede ser parcial: algunos archivos `SYNCED` y otros `FAILED`. La respuesta de `POST /v1/cards/sync` debe reflejarlo (pendiente: DTO de respuesta).
+- El resultado global puede ser parcial: algunos archivos `SYNCED` y otros `FAILED`. La respuesta de `POST /v1/sync` debe reflejarlo (pendiente: DTO de respuesta).
 - Cada repositorio se construye dos veces: una vez para uso normal y otra dentro de `TypeOrmUnitOfWork`. Agregar un repositorio al flujo transaccional exige tocar `TransactionalRepositories` y el adaptador.
 
 ## Verificación
