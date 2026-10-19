@@ -2,9 +2,10 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { CardEntity } from '../entities/card.entity';
+import { CardsReadRepositoryPort } from '../ports/cards-read.repository.port';
 
 @Injectable()
-export class CardsReadRepository implements CardsReadRepository {
+export class CardsReadRepository implements CardsReadRepositoryPort {
 
     constructor(
         @InjectRepository(CardEntity) private readonly typeormRepo: Repository<CardEntity>)
