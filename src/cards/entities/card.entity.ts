@@ -1,4 +1,4 @@
-import { CardType } from '../../enums/card-type.enum';
+import { CardType } from '../enums/card-type.enum';
 import { Column, CreateDateColumn, Entity, Index, JoinColumn, JoinTable, ManyToMany, ManyToOne, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm';
 import { CardSetEntity } from './card-set.entity';
 import { TraitEntity } from './trait.entity';

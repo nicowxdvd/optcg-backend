@@ -6,11 +6,11 @@ import { SyncFileRepository } from "./sync-file.repository";
 import { TraitRepository } from "./trait.repository";
 import { LeaderRepository } from "./leader.repository";
 import { CardRepository } from "./card.repository";
-import { CardSetEntity } from "./entities/card-set.entity";
+import { CardSetEntity } from "../entities/card-set.entity";
 import { SyncFileEntity } from "./entities/sync-file.entity";
-import { TraitEntity } from "./entities/trait.entity";
-import { LeaderEntity } from "./entities/leader.entity";
-import { CardEntity } from "./entities/card.entity";
+import { TraitEntity } from "../entities/trait.entity";
+import { LeaderEntity } from "../entities/leader.entity";
+import { CardEntity } from "../entities/card.entity";
 
 @Injectable()
 export class TypeOrmUnitOfWork implements UnitOfWorkPort {
