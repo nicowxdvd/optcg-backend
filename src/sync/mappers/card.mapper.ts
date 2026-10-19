@@ -1,5 +1,5 @@
 import { RawGithubCard } from '../interfaces/raw-github-card.interface';
-import { CardType } from '../enums/card-type.enum';
+import { CardType } from '../../cards/enums/card-type.enum';
 import { CardUpsertInput } from '../interfaces/card-upsert-input.interface';
 import { LeaderUpsertInput } from '../interfaces/leader-upsert-input.interface';
 

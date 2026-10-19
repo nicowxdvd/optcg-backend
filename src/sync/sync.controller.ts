@@ -1,16 +1,16 @@
 import { Controller, Post } from '@nestjs/common';
 import { SyncCardsResponseDto } from './dto/sync-cards-response.dto';
-import { CardsService } from './cards.service';
+import { SyncService } from './sync.service';
 
 @Controller('cards')
-export class CardsController {
+export class SyncController {
 
-    constructor(private readonly cardService: CardsService) {}
+    constructor(private readonly syncService: SyncService) {}
 
 
     @Post('sync')
     async syncCards(): Promise<SyncCardsResponseDto> {
-        await this.cardService.syncCards();
+        await this.syncService.syncCards();
 
         return { message: 'Cartas sincronizadas correctamente ' };
 

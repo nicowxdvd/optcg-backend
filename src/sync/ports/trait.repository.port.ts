@@ -1,4 +1,4 @@
-import { TraitEntity } from "../entities/trait.entity";
+import { TraitEntity } from "../../cards/entities/trait.entity";
 
 export const TRAIT_REPOSITORY = Symbol('TRAIT_REPOSITORY');
 

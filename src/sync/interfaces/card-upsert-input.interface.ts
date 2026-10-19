@@ -1,4 +1,4 @@
-import { CardType } from "../enums/card-type.enum";
+import { CardType } from "../../cards/enums/card-type.enum";
 
 export interface CardUpsertInput{
     externalId   : string;

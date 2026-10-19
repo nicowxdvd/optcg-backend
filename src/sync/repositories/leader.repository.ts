@@ -2,7 +2,7 @@ import { Injectable } from "@nestjs/common";
 import { LeaderRepositoryPort } from "../ports/leader.repository.port";
 import { LeaderUpsertInput } from "../interfaces/leader-upsert-input.interface";
 import { InjectRepository } from "@nestjs/typeorm";
-import { LeaderEntity } from "../entities/leader.entity";
+import { LeaderEntity } from "../../cards/entities/leader.entity";
 import { EntityManager, In, Repository } from "typeorm";
 
 @Injectable()

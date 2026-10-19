@@ -11,8 +11,8 @@ import { UNIT_OF_WORK, type UnitOfWorkPort } from './ports/unit-of-work.port';
 
 
 @Injectable()
-export class CardsService {
-    private readonly logger          = new Logger(CardsService.name);
+export class SyncService {
+    private readonly logger          = new Logger(SyncService.name);
     private readonly REPO_FILES_URL  = 'https://api.github.com/repos/apitcg/one-piece-tcg-data/contents/cards/en'
 
 
