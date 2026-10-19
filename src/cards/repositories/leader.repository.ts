@@ -21,11 +21,10 @@ export class LeaderRepository implements LeaderRepositoryPort{
         if(!leaders.length)
             return;
 
-        await this.repository.manager.transaction(async (manager) => {
-            await this.upsertLeaders(manager, leaders);
-            await this.syncTraits(manager, leaders);
-        });
+        const manager = this.repository.manager;
 
+        await this.upsertLeaders(manager, leaders);
+        await this.syncTraits(manager, leaders);
     }
 
 

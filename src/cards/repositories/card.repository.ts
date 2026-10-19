@@ -23,10 +23,10 @@ export class CardRepository implements CardRepositoryPort{
         if(!cards.length)
             return;
 
-        await this.repository.manager.transaction(async (manager) => {
-            await this.upsertCards(manager, cards);
-            await this.syncTraits(manager, cards);
-        });
+        const manager = this.repository.manager;
+
+        await this.upsertCards(manager, cards);
+        await this.syncTraits(manager, cards);
     }
 
 
@@ -34,16 +34,16 @@ export class CardRepository implements CardRepositoryPort{
     private async upsertCards(manager: EntityManager, cards: CardUpsertInput[]): Promise<void> {
         const metadata = manager.connection.getMetadata(CardEntity);
         const updatable = metadata.columns
-                                .filter((c) => !c.isPrimary && !c.isCreateDate && c.propertyName !== 'externalId')
-                                .map((c) => c.databaseName);
+                                  .filter((c) => !c.isPrimary && !c.isCreateDate && c.propertyName !== 'externalId')
+                                  .map((c) => c.databaseName);
 
         await manager.createQueryBuilder()
-                    .insert()
-                    .into(CardEntity)
-                    .values(cards.map(({ setId, ...card }) => ({ ...card, set: { id: setId } })))
-                    .orUpdate(updatable, ['external_id'])
-                    .updateEntity(false)
-                    .execute();
+                     .insert()
+                     .into(CardEntity)
+                     .values(cards.map(({ setId, ...card }) => ({ ...card, set: { id: setId } })))
+                     .orUpdate(updatable, ['external_id'])
+                     .updateEntity(false)
+                     .execute();
     }
 
 

@@ -2,14 +2,12 @@ import { HttpService } from '@nestjs/axios';
 import { Inject, Injectable, InternalServerErrorException, Logger } from '@nestjs/common';
 import { firstValueFrom } from 'rxjs';
 import { GithubRepoFile } from './interfaces/github-repo-file.interface';
-import { CARD_SET_REPOSITORY, type CardSetRepositoryPort } from './ports/card-set.repository.port';
 import { SYNC_FILE_REPOSITORY, type SyncFileRepositoryPort } from './ports/sync-files.repository.port';
 import { SyncStatus } from './enums/sync-status.enum';
 import { RawGithubCard } from './interfaces/raw-github-card.interface';
 import { isLeaderCard, parseSetCode, parseTraits, toCardInput, toLeaderInput } from './mappers/card.mapper';
-import { LEADER_REPOSITORY, type LeaderRepositoryPort } from './ports/leader.repository.port';
-import { CARD_REPOSITORY, type CardRepositoryPort } from './ports/card.repository.port';
-import { TRAIT_REPOSITORY, type TraitRepositoryPort } from './ports/trait.repository.port';
+import { UNIT_OF_WORK, type UnitOfWorkPort } from './ports/unit-of-work.port';
+
 
 
 @Injectable()
@@ -17,13 +15,12 @@ export class CardsService {
     private readonly logger          = new Logger(CardsService.name);
     private readonly REPO_FILES_URL  = 'https://api.github.com/repos/apitcg/one-piece-tcg-data/contents/cards/en'
 
+
+
     constructor(
         private readonly httpService: HttpService,
-        @Inject(CARD_SET_REPOSITORY)  private readonly cardSets  : CardSetRepositoryPort,
-        @Inject(SYNC_FILE_REPOSITORY) private readonly syncFiles : SyncFileRepositoryPort,
-        @Inject(LEADER_REPOSITORY)    private readonly leaders   : LeaderRepositoryPort,  
-        @Inject(CARD_REPOSITORY)      private readonly cards     : CardRepositoryPort,  
-        @Inject(TRAIT_REPOSITORY)     private readonly traits    : TraitRepositoryPort 
+        @Inject(SYNC_FILE_REPOSITORY) private readonly syncFiles  : SyncFileRepositoryPort,
+        @Inject(UNIT_OF_WORK)         private readonly unitOfWork : UnitOfWorkPort,
 
     ) {}
 
@@ -70,12 +67,12 @@ export class CardsService {
 
 
 
-    private async syncFile(file:GithubRepoFile): Promise<void> {
+    private async syncFile(file: GithubRepoFile): Promise<void> {
         try {
             this.logger.log(`Sincronizando archivo ${file.name}.`);
             await this.syncFiles.markPending(file.name!);
 
-            const raw   = await this.fetchFileCards(file);
+            const raw = await this.fetchFileCards(file);
             if (!raw.length)
                 throw new Error(`Archivo ${file.name} sin cartas`);
 
@@ -83,28 +80,30 @@ export class CardsService {
             if (!setName)
                 throw new Error(`Archivo ${file.name} sin nombre de set`);
 
-            const setCode = parseSetCode(setName);
-            const setId   = await this.cardSets.upsertByName(setName, setCode);
-            this.logger.log(`Set ${setName} (${setCode ?? 'sin código'}) guardado con id ${setId}.`);
+            const setCode    = parseSetCode(setName);
+            const leaders    = raw.filter(isLeaderCard);
+            const cards      = raw.filter((c) => !isLeaderCard(c));
+            const traitNames = [...new Set(raw.flatMap((c) => parseTraits(c.family)))];
 
-            const leaders = raw.filter(isLeaderCard);
-            const cards   = raw.filter( (c)=> !isLeaderCard(c) );
+            await this.unitOfWork.run(async (repos) => {
+                const setId = await repos.cardSets.upsertByName(setName, setCode);
+                this.logger.log(`Set ${setName} (${setCode ?? 'sin código'}) guardado con id ${setId}.`);
 
-            const traitNames    = [...new Set(raw.flatMap( (c) => parseTraits(c.family))) ]
-            const traits        = await this.traits.upsertByNames(traitNames);
-            const traitIdByName = new Map(traits.map((t) => [t.name, t.id]));
-            this.logger.log(`${traits.length} traits guardados para ${file.name}.`);
+                const traits        = await repos.traits.upsertByNames(traitNames);
+                const traitIdByName = new Map(traits.map((t) => [t.name, t.id]));
+                this.logger.log(`${traits.length} traits guardados para ${file.name}.`);
 
-            await this.leaders.upsertMany(leaders.map((r) => toLeaderInput(r, setId, traitIdByName)));
-            await this.cards.upsertMany(cards.map((r) => toCardInput(r, setId, traitIdByName)));
-            this.logger.log(`${leaders.length} líderes y ${cards.length} cartas guardados para ${file.name}.`);
+                await repos.leaders.upsertMany(leaders.map((r) => toLeaderInput(r, setId, traitIdByName)));
+                await repos.cards.upsertMany(cards.map((r) => toCardInput(r, setId, traitIdByName)));
+                this.logger.log(`${leaders.length} líderes y ${cards.length} cartas guardados para ${file.name}.`);
 
-            await this.syncFiles.markSynced(file.name!, file.sha!, raw.length)
+                await repos.syncFiles.markSynced(file.name!, file.sha!, raw.length);
+            });
+
             this.logger.log(`Archivo ${file.name} sincronizado.`);
-
         } catch (error) {
             this.logger.error(`Falló la sincronización de ${file.name}`, error instanceof Error ? error.stack : String(error));
-            await this.syncFiles.markFailed(file.name!, error instanceof Error ? error.message : String(error))
+            await this.syncFiles.markFailed(file.name!, error instanceof Error ? error.message : String(error));
         }
     }
 
