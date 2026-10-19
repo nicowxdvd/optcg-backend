@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { CardSetRepositoryPort } from '../ports/card-set.repository.port';
 import { Repository } from 'typeorm';
-import { CardSetEntity } from './entities/card-set.entity';
+import { CardSetEntity } from '../../cards/entities/card-set.entity';
 
 @Injectable()
 export class CardSetRepository implements CardSetRepositoryPort{
@@ -13,7 +13,14 @@ export class CardSetRepository implements CardSetRepositoryPort{
     ){}
 
     async upsertByName(name: string, code: string | null): Promise<number> {
-        await this.repository.upsert({name, code}, ['name']);
+        await this.repository.createQueryBuilder()
+                             .insert()
+                             .into(CardSetEntity)
+                             .values({ name, code })
+                             .orUpdate(['code'], ['name'])
+                             .updateEntity(false)
+                             .execute();
+        
         const  cardSet = await this.repository.findOneByOrFail({name})
         return cardSet.id;
     }

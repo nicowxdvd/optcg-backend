@@ -1,34 +1,17 @@
 import { Module } from '@nestjs/common';
-import { CardsController } from './cards.controller';
-import { HttpModule } from '@nestjs/axios';
-import { CardsService } from './cards.service';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { CardSetEntity } from './repositories/entities/card-set.entity';
-import { CARD_SET_REPOSITORY } from './ports/card-set.repository.port';
-import { CardSetRepository } from './repositories/card-set.repository';
-import { SyncFileEntity } from './repositories/entities/sync-file.entity';
-import { SYNC_FILE_REPOSITORY } from './ports/sync-files.repository.port';
-import { SyncFileRepository } from './repositories/sync-file.repository';
-import { TraitEntity } from './repositories/entities/trait.entity';
-import { TRAIT_REPOSITORY } from './ports/trait.repository.port';
-import { TraitRepository } from './repositories/trait.repository';
-import { CardEntity } from './repositories/entities/card.entity';
-import { CARD_REPOSITORY } from './ports/card.repository.port';
-import { CardRepository } from './repositories/card.repository';
-import { LeaderEntity } from './repositories/entities/leader.entity';
-import { LEADER_REPOSITORY } from './ports/leader.repository.port';
-import { LeaderRepository } from './repositories/leader.repository';
+import { CardSetEntity } from './entities/card-set.entity';
+import { TraitEntity } from './entities/trait.entity';
+import { CardEntity } from './entities/card.entity';
+import { LeaderEntity } from './entities/leader.entity';
+import { CARDS_READ_REPOSITORY } from './ports/cards-read.repository.port';
+import { CardsReadRepository } from './repositories/cards-read.repository';
+import { CardsService } from './cards.service';
+import { CardsController } from './cards.controller';
 
 @Module({
-  imports     : [HttpModule, TypeOrmModule.forFeature([CardSetEntity, SyncFileEntity, TraitEntity, CardEntity, LeaderEntity])],
-  controllers : [CardsController],
-  providers   : [
-    CardsService,
-    { provide: CARD_SET_REPOSITORY,  useClass: CardSetRepository },
-    { provide: SYNC_FILE_REPOSITORY, useClass: SyncFileRepository },
-    { provide: TRAIT_REPOSITORY,     useClass: TraitRepository },
-    { provide: CARD_REPOSITORY,      useClass: CardRepository },
-    { provide: LEADER_REPOSITORY,    useClass: LeaderRepository },
-  ],
+  imports : [TypeOrmModule.forFeature([CardSetEntity, TraitEntity, CardEntity, LeaderEntity])],
+  controllers: [CardsController],
+  providers: [CardsService, { provide: CARDS_READ_REPOSITORY, useClass: CardsReadRepository }],
 })
 export class CardsModule {}

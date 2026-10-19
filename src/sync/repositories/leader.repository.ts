@@ -2,7 +2,7 @@ import { Injectable } from "@nestjs/common";
 import { LeaderRepositoryPort } from "../ports/leader.repository.port";
 import { LeaderUpsertInput } from "../interfaces/leader-upsert-input.interface";
 import { InjectRepository } from "@nestjs/typeorm";
-import { LeaderEntity } from "./entities/leader.entity";
+import { LeaderEntity } from "../../cards/entities/leader.entity";
 import { EntityManager, In, Repository } from "typeorm";
 
 @Injectable()
@@ -21,19 +21,27 @@ export class LeaderRepository implements LeaderRepositoryPort{
         if(!leaders.length)
             return;
 
-        await this.repository.manager.transaction(async (manager) => {
-            await this.upsertLeaders(manager, leaders);
-            await this.syncTraits(manager, leaders);
-        });
+        const manager = this.repository.manager;
 
+        await this.upsertLeaders(manager, leaders);
+        await this.syncTraits(manager, leaders);
     }
 
 
 
     private async upsertLeaders(manager: EntityManager, leaders: LeaderUpsertInput[]): Promise<void> {
-        await manager.getRepository(LeaderEntity).upsert(
-            leaders.map(({ setId, ...leader }) => ({ ...leader, set: { id: setId } })), ['externalId']
-        );
+        const metadata = manager.connection.getMetadata(LeaderEntity);
+        const updatable = metadata.columns
+                                .filter((c) => !c.isPrimary && !c.isCreateDate && c.propertyName !== 'externalId')
+                                .map((c) => c.databaseName);
+
+        await manager.createQueryBuilder()
+                    .insert()
+                    .into(LeaderEntity)
+                    .values(leaders.map(({ setId, ...leader }) => ({ ...leader, set: { id: setId } })))
+                    .orUpdate(updatable, ['external_id'])
+                    .updateEntity(false)
+                    .execute();
     }
 
 

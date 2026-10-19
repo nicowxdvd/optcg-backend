@@ -1,18 +1,21 @@
-import { Controller, Post } from '@nestjs/common';
-import { SyncCardsResponseDto } from './dto/sync-cards-response.dto';
+import { Controller, Get, Query } from '@nestjs/common';
 import { CardsService } from './cards.service';
+import { ListCardsDto } from './dto/list-cards.dto';
+import { ApiOkResponse } from '@nestjs/swagger';
+import { PaginatedCardsDto } from './dto/paginated-cards.dto';
 
 @Controller('cards')
 export class CardsController {
 
-    constructor(private readonly cardService: CardsService) {}
+    constructor(
+        private readonly cardsService: CardsService
+    ) {}
 
 
-    @Post('sync')
-    async syncCards(): Promise<SyncCardsResponseDto> {
-        await this.cardService.syncCards();
-
-        return { message: 'Cartas sincronizadas correctamente ' };
+    @Get()
+    @ApiOkResponse({ type : PaginatedCardsDto })
+    list( @Query() query: ListCardsDto ): Promise<PaginatedCardsDto> {
+        return this.cardsService.list(query)
 
     }
 

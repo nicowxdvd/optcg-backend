@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository } from 'typeorm';
 import { TraitRepositoryPort } from '../ports/trait.repository.port';
-import { TraitEntity } from './entities/trait.entity';
+import { TraitEntity } from '../../cards/entities/trait.entity';
 
 @Injectable()
 export class TraitRepository implements TraitRepositoryPort{

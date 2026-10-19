@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { EntityManager, In, Repository } from 'typeorm';
-import { CardEntity } from './entities/card.entity';
+import { CardEntity } from '../../cards/entities/card.entity';
 import { CardRepositoryPort } from '../ports/card.repository.port';
 import { CardUpsertInput } from '../interfaces/card-upsert-input.interface';
 
@@ -23,18 +23,27 @@ export class CardRepository implements CardRepositoryPort{
         if(!cards.length)
             return;
 
-        await this.repository.manager.transaction(async (manager) => {
-            await this.upsertCards(manager, cards);
-            await this.syncTraits(manager, cards);
-        });
+        const manager = this.repository.manager;
+
+        await this.upsertCards(manager, cards);
+        await this.syncTraits(manager, cards);
     }
 
 
 
     private async upsertCards(manager: EntityManager, cards: CardUpsertInput[]): Promise<void> {
-        await manager.getRepository(CardEntity).upsert(
-            cards.map(({ setId, ...card }) => ({ ...card, set: { id: setId } })), ['externalId']
-        );
+        const metadata = manager.connection.getMetadata(CardEntity);
+        const updatable = metadata.columns
+                                  .filter((c) => !c.isPrimary && !c.isCreateDate && c.propertyName !== 'externalId')
+                                  .map((c) => c.databaseName);
+
+        await manager.createQueryBuilder()
+                     .insert()
+                     .into(CardEntity)
+                     .values(cards.map(({ setId, ...card }) => ({ ...card, set: { id: setId } })))
+                     .orUpdate(updatable, ['external_id'])
+                     .updateEntity(false)
+                     .execute();
     }
 
 
