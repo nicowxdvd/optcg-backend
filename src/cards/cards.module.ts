@@ -6,6 +6,7 @@ import { CardEntity } from './entities/card.entity';
 import { LeaderEntity } from './entities/leader.entity';
 import { CARDS_READ_REPOSITORY } from './ports/cards-read.repository.port';
 import { CardsReadRepository } from './repositories/cards-read.repository';
+import { CardsService } from './cards.service';
 
 @Module({
   imports : [TypeOrmModule.forFeature([CardSetEntity, TraitEntity, CardEntity, LeaderEntity])],
