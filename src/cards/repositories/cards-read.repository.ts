@@ -1,8 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Like, Repository } from 'typeorm';
+import { FindOptionsWhere, Like, Repository } from 'typeorm';
 import { CardEntity } from '../entities/card.entity';
-import { CardsReadRepositoryPort } from '../ports/cards-read.repository.port';
+import { CardFilters, CardsReadRepositoryPort } from '../ports/cards-read.repository.port';
 import { escapeLike } from '../../utils/utils';
 
 @Injectable()
@@ -13,9 +13,16 @@ export class CardsReadRepository implements CardsReadRepositoryPort {
     {}
 
 
-    async findPage(skip: number, take: number, name?: string) {
+    async findPage(skip: number, take: number,  { name, code }: CardFilters) {
+        const where: FindOptionsWhere<CardEntity> = {};
+        if (name)
+            where.name = Like(`%${escapeLike(name)}%`);
+
+        if (code)
+            where.cardCode = Like(`${escapeLike(code)}%`);
+
         const [items, total] = await this.typeormRepo.findAndCount({
-            where: name ? { name: Like(`%${escapeLike(name)}%`) } : undefined,
+            where: where,
             order: { cardCode: 'ASC', id: 'ASC' },
             skip,
             take,
