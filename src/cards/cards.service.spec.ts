@@ -36,7 +36,7 @@ describe('CardsService', () => {
 
       const result = await service.list({ page, limit });
 
-      expect(findPage).toHaveBeenCalledWith(skip, limit, undefined);
+      expect(findPage).toHaveBeenCalledWith(skip, limit, { name: undefined, code: undefined });
       expect(result).toEqual({ items: [], total, page, totalPages });
 
     });
@@ -47,7 +47,28 @@ describe('CardsService', () => {
 
       await service.list({ page: 2, limit: 10, name: 'izo' });
 
-      expect(findPage).toHaveBeenCalledWith(10, 10, 'izo');
+      expect(findPage).toHaveBeenCalledWith(10, 10, { name: 'izo', code: undefined });
+
+    });
+
+
+    it('pasa code al repositorio', async () => {
+      findPage.mockResolvedValue({ items: [], total: 0 });
+
+      await service.list({ page: 1, limit: 20, code: 'OP01' });
+
+      expect(findPage).toHaveBeenCalledWith(0, 20, { name: undefined, code: 'OP01' });
+
+    });
+
+
+    it('combina name y code con la paginación', async () => {
+      findPage.mockResolvedValue({ items: [], total: 25 });
+
+      const result = await service.list({ page: 2, limit: 10, name: 'izo', code: 'OP01' });
+
+      expect(findPage).toHaveBeenCalledWith(10, 10, { name: 'izo', code: 'OP01' });
+      expect(result).toEqual({ items: [], total: 25, page: 2, totalPages: 3 });
 
     });
 
