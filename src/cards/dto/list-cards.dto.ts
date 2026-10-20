@@ -1,6 +1,6 @@
 import { ApiPropertyOptional } from "@nestjs/swagger";
-import { Type } from "class-transformer";
-import { IsInt, IsOptional, Max, Min } from "class-validator";
+import { Transform, Type } from "class-transformer";
+import { IsInt, IsOptional, IsString, Max, MaxLength, Min } from "class-validator";
 
 export class ListCardsDto {
   @ApiPropertyOptional({ default: 1, minimum: 1 })
@@ -11,6 +11,7 @@ export class ListCardsDto {
   page: number = 1;
 
 
+
   @ApiPropertyOptional({ default: 20, minimum: 1, maximum: 500 })
   @IsOptional()
   @Type(() => Number)
@@ -18,4 +19,14 @@ export class ListCardsDto {
   @Min(1, { message: 'limit debe ser mayor o igual a $constraint1' })
   @Max(500, { message: 'limit debe ser menor o igual a $constraint1' })
   limit: number = 20;
+
+
+
+  @ApiPropertyOptional({ maxLength: 100 })
+  @IsOptional()
+  @Transform(({ value }: { value: unknown }) => typeof value === 'string' ? (value.trim() || undefined) : value)
+  @IsString({ message: 'name debe ser un texto' })
+  @MaxLength(100, { message: 'name debe tener como máximo $constraint1 caracteres' })
+  name?: string;
+
 }
