@@ -11,6 +11,8 @@ export class CardsService {
         @Inject(CARDS_READ_REPOSITORY) private readonly cardsRead: CardsReadRepositoryPort,
     ) {}
 
+    
+
     async list({ page, limit, name, code }: ListCardsDto): Promise<PaginatedCardsDto> {
         const { items, total } = await this.cardsRead.findPage((page - 1) * limit, limit, {name, code});
 
