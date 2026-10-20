@@ -36,8 +36,18 @@ describe('CardsService', () => {
 
       const result = await service.list({ page, limit });
 
-      expect(findPage).toHaveBeenCalledWith(skip, limit);
+      expect(findPage).toHaveBeenCalledWith(skip, limit, undefined);
       expect(result).toEqual({ items: [], total, page, totalPages });
+
+    });
+
+
+    it('pasa name al repositorio', async () => {
+      findPage.mockResolvedValue({ items: [], total: 0 });
+
+      await service.list({ page: 2, limit: 10, name: 'izo' });
+
+      expect(findPage).toHaveBeenCalledWith(10, 10, 'izo');
 
     });
 
