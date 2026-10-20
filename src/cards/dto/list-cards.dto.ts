@@ -29,4 +29,13 @@ export class ListCardsDto {
   @MaxLength(100, { message: 'name debe tener como máximo $constraint1 caracteres' })
   name?: string;
 
+
+
+  @ApiPropertyOptional({ maxLength: 20, example: 'OP01-001' })
+  @IsOptional()
+  @Transform(({ value }: { value: unknown }) => typeof value === 'string' ? (value.trim().toUpperCase() || undefined) : value)
+  @IsString({ message: 'code debe ser un texto' })
+  @MaxLength(20, { message: 'code debe tener como máximo $constraint1 caracteres' })
+  code?: string;
+
 }
