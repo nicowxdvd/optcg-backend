@@ -3,7 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Like, Repository } from 'typeorm';
 import { CardEntity } from '../entities/card.entity';
 import { CardsReadRepositoryPort } from '../ports/cards-read.repository.port';
-import { escapeLike } from '../../utils';
+import { escapeLike } from '../../utils/utils';
 
 @Injectable()
 export class CardsReadRepository implements CardsReadRepositoryPort {
