@@ -40,11 +40,11 @@ export class ListLeadersDto {
 
 
 
-  @ApiPropertyOptional({ maxLength: 50, example: 'Red/Green' })
+  @ApiPropertyOptional({ maxLength: 50, example: 'RED/GREEN' })
   @IsOptional()
   @Transform(({ value }: { value: unknown }) => typeof value === 'string' ? (value.trim().toUpperCase() || undefined) : value)
-  @IsString({ message: 'Color debe ser un texto' })
-  @MaxLength(50, { message: 'Color debe tener como máximo $constraint1 caracteres' })
+  @IsString({ message: 'color debe ser un texto' })
+  @MaxLength(50, { message: 'color debe tener como máximo $constraint1 caracteres' })
   color?: string;
 
 }
