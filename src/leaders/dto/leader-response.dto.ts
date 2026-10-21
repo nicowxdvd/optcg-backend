@@ -6,11 +6,11 @@ export class LeaderResponseDto {
   @ApiProperty() name!                                          : string;
   @ApiProperty() rarity!                                        : string;
   @ApiProperty() color!                                         : string;
-  @ApiProperty({ type: Number, nullable: true }) life!          : number | null;
-  @ApiProperty({ type: Number, nullable: true }) power!         : number | null;
+  @ApiProperty() life!                                          : number | null;
+  @ApiProperty() power!                                         : number | null;
   @ApiProperty({ type: String, nullable: true }) attribute!     : string | null;
   @ApiProperty({ type: String, nullable: true }) effect!        : string | null;
   @ApiProperty() imageUrl!                                      : string;
   @ApiProperty() set!                                           : string;
-  @ApiProperty() traits!                                        : string[];
+  @ApiProperty({ type: [String] }) traits!                      : string[];
 }
