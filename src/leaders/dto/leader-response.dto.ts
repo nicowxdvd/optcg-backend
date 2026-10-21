@@ -6,8 +6,8 @@ export class LeaderResponseDto {
   @ApiProperty() name!                                          : string;
   @ApiProperty() rarity!                                        : string;
   @ApiProperty() color!                                         : string;
-  @ApiProperty() life!                                          : number | null;
-  @ApiProperty() power!                                         : number | null;
+  @ApiProperty() life!                                          : number;
+  @ApiProperty() power!                                         : number;
   @ApiProperty({ type: String, nullable: true }) attribute!     : string | null;
   @ApiProperty({ type: String, nullable: true }) effect!        : string | null;
   @ApiProperty() imageUrl!                                      : string;
