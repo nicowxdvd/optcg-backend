@@ -18,4 +18,16 @@ describe('ListLeadersDto', () => {
 
   });
 
+  describe('page', () => {
+
+    it('por defecto es 1', async () => {
+      const dto = build({});
+
+      expect(dto.page).toBe(1);
+      expect(await validate(dto)).toHaveLength(0);
+
+    });
+
+  });
+
 });
