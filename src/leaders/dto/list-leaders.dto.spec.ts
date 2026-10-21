@@ -28,10 +28,10 @@ describe('ListLeadersDto', () => {
 
     });
 
-    it.each([0,-1])('rechaza %s',  async(input) => {
-        const errors = await validate(build({page: input}));
-        expect(errors).toHaveLength(1);
-        expect(errors[0].constraints).toEqual({ min: 'page debe ser mayor o igual a 1' });
+    it.each([0,-1])('rechaza %s', async(input) => {
+      const errors = await validate(build({page: input}));
+      expect(errors).toHaveLength(1);
+      expect(errors[0].constraints).toEqual({ min: 'page debe ser mayor o igual a 1' });
     });
 
   });
