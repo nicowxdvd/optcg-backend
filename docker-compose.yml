@@ -1,3 +1,12 @@
+x-api-base: &api-base
+  build: .
+  image: optcg-api
+  env_file: .env
+  environment:
+    DB_HOST: mysql
+    DB_PORT: 3306
+    DB_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+    REDIS_URL: redis://redis:6379
 services:
   redis:
     image: redis:7-alpine
@@ -31,22 +40,28 @@ services:
       retries: 10
     restart: unless-stopped
 
+  migrate:
+    <<: *api-base
+    container_name: optcg-migrate
+    command: ["npm", "run", "migration:run:prod"]
+    depends_on:
+      mysql:
+        condition: service_healthy
+    restart: "no"
+
   api:
-    build: .
+    <<: *api-base
     container_name: optcg-api
     ports:
       - "3001:3000"
-    env_file: .env
-    environment:
-      DB_HOST: mysql
-      DB_PORT: 3306
-      DB_PASSWORD: ${MYSQL_ROOT_PASSWORD}
-      REDIS_URL: redis://redis:6379
     depends_on:
       mysql:
         condition: service_healthy
       redis:
         condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    restart: unless-stopped
 
 volumes:
   redis-data:
