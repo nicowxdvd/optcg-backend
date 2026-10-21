@@ -22,10 +22,11 @@ export class LeadersReadRepository implements LeadersReadRepositoryPort {
             where.cardCode = Like(`${escapeLike(code)}%`);
 
         if (color)
-            where.color = Like(`${escapeLike(color)}%`);
+            where.color = Like(`%${escapeLike(color)}%`);
 
         const [items, total] = await this.typeormRepo.findAndCount({
             where: where,
+            relations: { set: true, traits: true },
             order: { cardCode: 'ASC', id: 'ASC' },
             skip,
             take,
