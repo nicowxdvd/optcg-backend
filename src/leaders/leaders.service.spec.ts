@@ -72,6 +72,13 @@ describe('LeadersService', () => {
 
     });
 
+    it('propaga el error del repositorio', async () => {
+    findPage.mockRejectedValue(new Error('db caída'));
+
+    await expect(service.list({ page: 1, limit: 20 })).rejects.toThrow('db caída');
+
+    });
+
   });
 
 });
