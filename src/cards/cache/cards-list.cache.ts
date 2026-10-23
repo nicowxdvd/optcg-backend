@@ -4,7 +4,7 @@ import { PaginatedCardsDto } from "../dto/paginated-cards.dto";
 import { ListCardsDto } from "../dto/list-cards.dto";
 import { REDIS_CLIENT } from "../../redis/redis.constants";
 import { Redis } from 'ioredis';
-import { createHash } from "crypto";
+import { createHash } from 'crypto';
 
 @Injectable()
 export class CardsListCache {
@@ -26,7 +26,20 @@ export class CardsListCache {
 
 
     async get(query: ListCardsDto): Promise<PaginatedCardsDto | null> {
+        try {
+            const key        = await this.buildKey(query);
+            const cachedData = await this.redis.get(key);
 
+            if (!cachedData) {
+                return null;
+            }
+            
+            return JSON.parse(cachedData) as PaginatedCardsDto;
+        } catch (error) {
+            this.logger.error(`No se pudo obtener la caché: ${error instanceof Error ? error.message : String(error)}`);
+            return null;
+
+        }
     }
 
 
@@ -41,7 +54,7 @@ export class CardsListCache {
         try {
             await this.redis.incr(this.VERSION_KEY);
         } catch (error) {
-            this.logger.error('No se pudo invalidar la caché', error);
+            this.logger.error(`No se pudo invalidar la caché: ${error instanceof Error ? error.message : String(error)}`);
         }
     }
 
