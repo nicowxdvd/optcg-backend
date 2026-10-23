@@ -12,9 +12,10 @@ import { CardEntity } from '../cards/entities/card.entity';
 import { LeaderEntity } from '../cards/entities/leader.entity';
 import { UNIT_OF_WORK } from './ports/unit-of-work.port';
 import { TypeOrmUnitOfWork } from './repositories/typeorm-unit-of-work';
+import { CardsModule } from '../cards/cards.module';
 
 @Module({
-  imports     : [HttpModule, TypeOrmModule.forFeature([CardSetEntity, SyncFileEntity, TraitEntity, CardEntity, LeaderEntity])],
+  imports     : [HttpModule,CardsModule, TypeOrmModule.forFeature([CardSetEntity, SyncFileEntity, TraitEntity, CardEntity, LeaderEntity])],
   controllers : [SyncController],
   providers   : [
     SyncService,
