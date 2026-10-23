@@ -7,6 +7,7 @@ import { SyncStatus } from './enums/sync-status.enum';
 import { RawGithubCard } from './interfaces/raw-github-card.interface';
 import { isLeaderCard, parseSetCode, parseTraits, toCardInput, toLeaderInput } from './mappers/card.mapper';
 import { UNIT_OF_WORK, type UnitOfWorkPort } from './ports/unit-of-work.port';
+import { CardsListCache } from '../cards/cache/cards-list.cache';
 
 
 
@@ -19,8 +20,9 @@ export class SyncService {
 
     constructor(
         private readonly httpService: HttpService,
-        @Inject(SYNC_FILE_REPOSITORY) private readonly syncFiles  : SyncFileRepositoryPort,
-        @Inject(UNIT_OF_WORK)         private readonly unitOfWork : UnitOfWorkPort,
+        @Inject(SYNC_FILE_REPOSITORY) private readonly syncFiles      : SyncFileRepositoryPort,
+        @Inject(UNIT_OF_WORK)         private readonly unitOfWork     : UnitOfWorkPort,
+        @Inject(CardsListCache)       private readonly cardsListCache : CardsListCache,
 
     ) {}
 
@@ -61,6 +63,10 @@ export class SyncService {
 
         }
 
+        const synced = files.length - skipped;
+        if (synced > 0) {
+            await this.cardsListCache.invalidate();
+        }
         this.logger.log(`Sincronización terminada: ${files.length} archivos, ${skipped} omitidos.`);
 
     }
