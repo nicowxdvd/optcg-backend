@@ -37,7 +37,14 @@ export class CardsListCache {
 
 
 
-    async invalidate() :Promise<void> {}
+    async invalidate() :Promise<void> {
+        try {
+            await this.redis.incr(this.VERSION_KEY);
+        } catch (error) {
+            this.logger.error('No se pudo invalidar la caché', error);
+        }
+    }
+
 
 
     private async buildKey({ page, limit, name, code }: ListCardsDto): Promise<string> {
