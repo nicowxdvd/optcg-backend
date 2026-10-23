@@ -3,6 +3,9 @@ import { CardsService } from './cards.service';
 import { CARDS_READ_REPOSITORY, type CardsReadRepositoryPort } from './ports/cards-read.repository.port';
 import { CardEntity } from './entities/card.entity';
 import { CardType } from './enums/card-type.enum';
+import { CardsListCache } from './cache/cards-list.cache';
+
+jest.mock('@nestjs/config', () => ({ ConfigService: class {} }));
 
 const makeCard = (externalId: string) => ({ externalId, cardCode: externalId, name: 'Izo', type: CardType.CHARACTER, rarity: 'R', color: 'Red', cost: 5, power: 7000, counterValue: null, attribute: 'Ranged', effect: null, triggerEffect: null, imageUrl: 'https://img/izo.png' }) as CardEntity;
 
@@ -10,12 +13,14 @@ describe('CardsService', () => {
 
   let service : CardsService;
   let findPage: jest.MockedFunction<CardsReadRepositoryPort['findPage']>;
+  let cache   : { get: jest.Mock; set: jest.Mock };
 
   beforeEach(async () => {
     findPage = jest.fn();
+    cache    = { get: jest.fn().mockResolvedValue(null), set: jest.fn().mockResolvedValue(undefined) };
 
     const module = await Test.createTestingModule({
-      providers: [CardsService, { provide: CARDS_READ_REPOSITORY, useValue: { findPage } }],
+      providers: [CardsService, { provide: CARDS_READ_REPOSITORY, useValue: { findPage } }, { provide: CardsListCache, useValue: cache }],
     }).compile();
 
     service = module.get(CardsService);
@@ -88,6 +93,41 @@ describe('CardsService', () => {
       findPage.mockRejectedValue(new Error('db caída'));
 
       await expect(service.list({ page: 1, limit: 20 })).rejects.toThrow('db caída');
+
+    });
+
+
+    it('hit: devuelve la caché y no llama al repositorio', async () => {
+      const cached = { items: [], total: 3, page: 1, totalPages: 1 };
+      cache.get.mockResolvedValue(cached);
+
+      const result = await service.list({ page: 1, limit: 20 });
+
+      expect(result).toBe(cached);
+      expect(findPage).not.toHaveBeenCalled();
+      expect(cache.set).not.toHaveBeenCalled();
+
+    });
+
+
+    it('miss: consulta el repositorio y guarda el resultado en la caché', async () => {
+      findPage.mockResolvedValue({ items: [], total: 0 });
+      const query = { page: 1, limit: 20 };
+
+      const result = await service.list(query);
+
+      expect(findPage).toHaveBeenCalledTimes(1);
+      expect(cache.set).toHaveBeenCalledWith(query, result);
+
+    });
+
+
+    it('no guarda en la caché si el repositorio falla', async () => {
+      findPage.mockRejectedValue(new Error('db caída'));
+
+      await expect(service.list({ page: 1, limit: 20 })).rejects.toThrow('db caída');
+
+      expect(cache.set).not.toHaveBeenCalled();
 
     });
 
