@@ -1,7 +1,9 @@
-import { Injectable, Logger } from "@nestjs/common";
+import { Inject, Injectable, Logger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { PaginatedCardsDto } from "../dto/paginated-cards.dto";
 import { ListCardsDto } from "../dto/list-cards.dto";
+import { REDIS_CLIENT } from "../../redis/redis.constants";
+import { Redis } from 'ioredis';
 
 @Injectable()
 export class CardsListCache {
