@@ -27,16 +27,16 @@ export class CardsListCache {
 
     async get(query: ListCardsDto): Promise<PaginatedCardsDto | null> {
         try {
-            const key        = await this.buildKey(query);
-            const cachedData = await this.redis.get(key);
+            const key    = await this.buildKey(query);
+            const cached = await this.redis.get(key);
 
-            if (!cachedData) {
+            if (!cached) {
                 return null;
             }
-            
-            return JSON.parse(cachedData) as PaginatedCardsDto;
+
+            return JSON.parse(cached) as PaginatedCardsDto;
         } catch (error) {
-            this.logger.error(`No se pudo obtener la caché: ${error instanceof Error ? error.message : String(error)}`);
+            this.logger.warn(`No se pudo obtener la caché: ${error instanceof Error ? error.message : String(error)}`);
             return null;
 
         }
@@ -45,6 +45,15 @@ export class CardsListCache {
 
 
     async set(query: ListCardsDto, value: PaginatedCardsDto): Promise<void> {
+        try {
+            const key     = await this.buildKey(query);
+            const payload = JSON.stringify(value);
+
+            await this.redis.set(key, payload, 'EX', this.ttl);
+
+        } catch (error) {
+            this.logger.warn(`No se pudo guardar en la caché: ${error instanceof Error ? error.message : String(error)}`);
+        }
 
     }
 
