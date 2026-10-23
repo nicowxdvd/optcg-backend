@@ -4,6 +4,7 @@ import { PaginatedCardsDto } from "../dto/paginated-cards.dto";
 import { ListCardsDto } from "../dto/list-cards.dto";
 import { REDIS_CLIENT } from "../../redis/redis.constants";
 import { Redis } from 'ioredis';
+import { createHash } from "crypto";
 
 @Injectable()
 export class CardsListCache {
@@ -39,5 +40,11 @@ export class CardsListCache {
     async invalidate() :Promise<void> {}
 
 
-    private async buildKey(query: ListCardsDto): Promise<string> {}
+    private async buildKey({ page, limit, name, code }: ListCardsDto): Promise<string> {
+        const version = await this.redis.get(this.VERSION_KEY) ?? '0';
+        const payload = JSON.stringify({ page, limit, name: name?.toLowerCase(), code });
+        const hash    = createHash('sha256').update(payload).digest('hex');
+
+        return `cards:list:v${version}:${hash}`;
+    }
 }
