@@ -1,34 +1,50 @@
 import { INestApplication, ValidationPipe, VersioningType } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
+import { ConfigService } from '@nestjs/config';
+import RedisMock from 'ioredis-mock';
 import request from 'supertest';
 import { Like, Repository } from 'typeorm';
+import { CardsListCache } from '../src/cards/cache/cards-list.cache';
 import { CardsController } from '../src/cards/cards.controller';
 import { CardsService } from '../src/cards/cards.service';
 import { CardEntity } from '../src/cards/entities/card.entity';
 import { CardType } from '../src/cards/enums/card-type.enum';
 import { CARDS_READ_REPOSITORY } from '../src/cards/ports/cards-read.repository.port';
 import { CardsReadRepository } from '../src/cards/repositories/cards-read.repository';
+import { REDIS_CLIENT } from '../src/redis/redis.constants';
 
 const makeCard = (externalId: string, cardCode: string) => ({ externalId, cardCode, name: 'Luffy', type: CardType.CHARACTER, rarity: 'R', color: 'Red', cost: 5, power: 7000, counterValue: null, attribute: 'Ranged', effect: null, triggerEffect: null, imageUrl: 'https://img/luffy.png' }) as CardEntity;
 
 // @nestjs/typeorm 12 es ESM puro y jest (CommonJS) no lo carga; solo se necesita el decorador
 jest.mock('@nestjs/typeorm', () => ({ InjectRepository: () => () => undefined }));
 
+// @nestjs/config también es ESM puro; CardsListCache solo lo usa como token de inyección
+jest.mock('@nestjs/config', () => ({ ConfigService: class {} }));
+
 describe('GET /v1/cards (e2e)', () => {
 
   let app: INestApplication;
   let findAndCount: jest.Mock;
+  let cache: CardsListCache;
 
   beforeEach(async () => {
     findAndCount = jest.fn().mockResolvedValue([[], 0]);
+
+    const redis = new RedisMock();
+    await redis.flushall();
 
     const moduleRef = await Test.createTestingModule({
       controllers: [CardsController],
       providers: [
         CardsService,
+        CardsListCache,
+        { provide: REDIS_CLIENT, useValue: redis },
+        { provide: ConfigService, useValue: { get: jest.fn().mockReturnValue(3600) } },
         { provide: CARDS_READ_REPOSITORY, useFactory: () => new CardsReadRepository({ findAndCount } as unknown as Repository<CardEntity>) },
       ],
     }).compile();
+
+    cache = moduleRef.get(CardsListCache);
 
     app = moduleRef.createNestApplication();
     app.enableVersioning({ type: VersioningType.URI, defaultVersion: '1' });
@@ -101,6 +117,61 @@ describe('GET /v1/cards (e2e)', () => {
 
     expect(response.body.message).toContain('code debe tener como máximo 20 caracteres');
     expect(findAndCount).not.toHaveBeenCalled();
+
+  });
+
+
+  describe('caché', () => {
+
+    it('dos GET iguales consultan el repositorio una sola vez', async () => {
+      findAndCount.mockResolvedValue([[makeCard('OP01-001', 'OP01-001')], 1]);
+
+      const first  = await request(app.getHttpServer()).get('/v1/cards').query({ code: 'OP01-001' }).expect(200);
+      const second = await request(app.getHttpServer()).get('/v1/cards').query({ code: 'OP01-001' }).expect(200);
+
+      expect(findAndCount).toHaveBeenCalledTimes(1);
+      expect(second.body).toEqual(first.body);
+
+    });
+
+
+    it('GET con filtros distintos no comparten caché', async () => {
+      await request(app.getHttpServer()).get('/v1/cards').query({ code: 'OP01' }).expect(200);
+      await request(app.getHttpServer()).get('/v1/cards').query({ code: 'OP02' }).expect(200);
+
+      expect(findAndCount).toHaveBeenCalledTimes(2);
+
+    });
+
+
+    it('name en mayúsculas y minúsculas comparte caché', async () => {
+      await request(app.getHttpServer()).get('/v1/cards').query({ name: 'Luffy' }).expect(200);
+      await request(app.getHttpServer()).get('/v1/cards').query({ name: 'luffy' }).expect(200);
+
+      expect(findAndCount).toHaveBeenCalledTimes(1);
+
+    });
+
+
+    it('después de invalidate vuelve a consultar el repositorio', async () => {
+      await request(app.getHttpServer()).get('/v1/cards').query({ code: 'OP01' }).expect(200);
+
+      await cache.invalidate();
+
+      await request(app.getHttpServer()).get('/v1/cards').query({ code: 'OP01' }).expect(200);
+
+      expect(findAndCount).toHaveBeenCalledTimes(2);
+
+    });
+
+
+    it('una respuesta 400 no se guarda en la caché', async () => {
+      await request(app.getHttpServer()).get('/v1/cards').query({ code: 'A'.repeat(21) }).expect(400);
+      await request(app.getHttpServer()).get('/v1/cards').query({ code: 'A'.repeat(21) }).expect(400);
+
+      expect(findAndCount).not.toHaveBeenCalled();
+
+    });
 
   });
 

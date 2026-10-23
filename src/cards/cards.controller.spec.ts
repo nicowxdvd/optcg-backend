@@ -3,6 +3,8 @@ import { CardsController } from './cards.controller';
 import { CardsService } from './cards.service';
 import { PaginatedCardsDto } from './dto/paginated-cards.dto';
 
+jest.mock('@nestjs/config', () => ({ ConfigService: class {} }));
+
 describe('CardsController', () => {
 
   let controller: CardsController;
