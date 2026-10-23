@@ -4,6 +4,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { CardsModule } from './cards/cards.module';
 import { SyncModule } from './sync/sync.module';
 import { RedisModule } from './redis/redis.module';
+import { LeadersModule } from './leaders/leaders.module';
 
 @Module({
   imports: [
@@ -14,6 +15,7 @@ import { RedisModule } from './redis/redis.module';
     }),
     RedisModule,
     CardsModule,
+    LeadersModule,
     SyncModule,
   ],
   controllers: [],
