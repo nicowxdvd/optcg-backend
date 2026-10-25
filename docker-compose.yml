@@ -53,6 +53,7 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - ./localstack/init:/etc/localstack/init/ready.d:ro
+      - ./lambdas/dist:/lambdas:ro
     healthcheck:
       test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:4566/_localstack/health')"]
       interval: 5s
