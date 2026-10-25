@@ -1,5 +1,5 @@
 import { Inject, Injectable } from "@nestjs/common";
-import { DYNAMO_CLIENT, S3_CLIENT } from "../aws/aws.constants";
+import { DYNAMO_CLIENT, S3_PRESIGN_CLIENT } from "../aws/aws.constants";
 import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
 import { DynamoDBDocumentClient, PutCommand } from "@aws-sdk/lib-dynamodb";
 import { ConfigService } from "@nestjs/config";
@@ -16,8 +16,8 @@ const PENDING_TTL    = 3600;
 export class UploadsService {
 
     constructor(
-        @Inject(S3_CLIENT)     private readonly s3    : S3Client,
-        @Inject(DYNAMO_CLIENT) private readonly dynamo: DynamoDBDocumentClient,
+        @Inject(S3_PRESIGN_CLIENT) private readonly s3Presign : S3Client,
+        @Inject(DYNAMO_CLIENT) private readonly dynamo        : DynamoDBDocumentClient,
         private readonly config: ConfigService)
     {}
 
@@ -30,9 +30,9 @@ export class UploadsService {
         const now    = Date.now();
 
         const uploadUrl = await getSignedUrl(
-            this.s3,
+            this.s3Presign,
             new PutObjectCommand({ Bucket: bucket, Key: key, ContentType: dto.contentType, ContentLength: dto.size }),
-            { expiresIn: URL_EXPIRES_IN , signableHeaders: new Set(['content-type'])}
+            { expiresIn: URL_EXPIRES_IN, signableHeaders: new Set(['content-type']) }
         );
 
         await this.dynamo.send(
