@@ -7,6 +7,7 @@ x-api-base: &api-base
     DB_PORT: 3306
     DB_PASSWORD: ${MYSQL_ROOT_PASSWORD}
     REDIS_URL: redis://redis:6379
+    AWS_ENDPOINT_URL: http://localstack:4566
 services:
   redis:
     image: redis:7-alpine
