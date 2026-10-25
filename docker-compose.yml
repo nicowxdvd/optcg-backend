@@ -40,6 +40,23 @@ services:
       retries: 10
     restart: unless-stopped
 
+  localstack:
+    image: localstack/localstack:2026.10.2
+    container_name: optcg-localstack
+    ports:
+      - "4566:4566"
+    environment:
+      SERVICES: s3,sns,sqs,lambda,dynamodb
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./localstack/init:/etc/localstack/init/ready.d:ro
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4566/_localstack/health"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
   migrate:
     <<: *api-base
     container_name: optcg-migrate
