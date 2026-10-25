@@ -25,10 +25,21 @@ export class UploadsService {
         const bucket = this.config.getOrThrow<string>('S3_UPLOADS_BUCKET');
         const item   = { pk: `JOB#${jobId}`, sk: 'META' };
 
-        await this.dynamo.send(new PutCommand({ TableName: 'jobs', Item: { ...item, jobId, status: 'UPLOADED', key, createdAt: new Date().toISOString() } }));
+        await this.dynamo.send(
+            new PutCommand({ 
+                TableName: 'jobs', 
+                Item: { 
+                    ...item, jobId, status: 'UPLOADED', key, createdAt: new Date().toISOString()
+                } 
+            })
+        );
 
         try {
-            await this.s3.send(new PutObjectCommand({ Bucket: bucket, Key: key, Body: file.buffer, ContentType: file.mimetype }));
+            await this.s3.send(
+                new PutObjectCommand({ 
+                    Bucket: bucket, Key: key, Body: file.buffer, ContentType: file.mimetype 
+                })
+            );
         } catch (error) {
             await this.dynamo.send(new DeleteCommand({ TableName: 'jobs', Key: item }));
             throw error;
