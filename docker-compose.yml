@@ -7,6 +7,7 @@ x-api-base: &api-base
     DB_PORT: 3306
     DB_PASSWORD: ${MYSQL_ROOT_PASSWORD}
     REDIS_URL: redis://redis:6379
+    AWS_ENDPOINT_URL: http://localstack:4566
 services:
   redis:
     image: redis:7-alpine
@@ -35,6 +36,24 @@ services:
       - mysql-data:/var/lib/mysql
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-p${MYSQL_ROOT_PASSWORD}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
+  localstack:
+    image: localstack/localstack:2026.10.2
+    container_name: optcg-localstack
+    ports:
+      - "4566:4566"
+    environment:
+      SERVICES: s3,sns,sqs,lambda,dynamodb
+      LOCALSTACK_AUTH_TOKEN: ${LOCALSTACK_AUTH_TOKEN}
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./localstack/init:/etc/localstack/init/ready.d:ro
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4566/_localstack/health"]
       interval: 5s
       timeout: 3s
       retries: 10
