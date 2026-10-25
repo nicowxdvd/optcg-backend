@@ -7,6 +7,7 @@
   "license": "UNLICENSED",
   "scripts": {
     "build": "nest build",
+    "lambda:build": "esbuild lambdas/processor/index.ts --bundle --platform=node --target=node22 --outfile=lambdas/dist/processor/index.js",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "start": "nest start",
     "start:dev": "nest start --watch",
