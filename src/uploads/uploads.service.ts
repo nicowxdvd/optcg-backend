@@ -39,9 +39,9 @@ export class UploadsService {
             new PutCommand({ 
                 TableName: 'jobs', 
                 Item: {
-                    pk: `JOB#${jobId}`, sk: 'META', jobId, status: 'PENDING', key,
-                    createdAt: new Date(now).toISOString(),
-                    ttl: Math.floor(now / 1000) + PENDING_TTL
+                    pk        : `JOB#${jobId}`, sk: 'META', jobId, status: 'PENDING', key,
+                    createdAt : new Date(now).toISOString(),
+                    ttl       : Math.floor(now / 1000) + PENDING_TTL
                 }
             })
         );
