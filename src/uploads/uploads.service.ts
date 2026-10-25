@@ -32,7 +32,7 @@ export class UploadsService {
         const uploadUrl = await getSignedUrl(
             this.s3,
             new PutObjectCommand({ Bucket: bucket, Key: key, ContentType: dto.contentType, ContentLength: dto.size }),
-            { expiresIn: URL_EXPIRES_IN }
+            { expiresIn: URL_EXPIRES_IN , signableHeaders: new Set(['content-type'])}
         );
 
         await this.dynamo.send(
