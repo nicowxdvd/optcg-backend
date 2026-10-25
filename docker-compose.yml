@@ -47,6 +47,7 @@ services:
       - "4566:4566"
     environment:
       SERVICES: s3,sns,sqs,lambda,dynamodb
+      LOCALSTACK_AUTH_TOKEN: ${LOCALSTACK_AUTH_TOKEN}
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - ./localstack/init:/etc/localstack/init/ready.d:ro
