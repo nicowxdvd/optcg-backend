@@ -1,0 +1,10 @@
+#!/bin/bash
+awslocal dynamodb create-table \
+  --table-name jobs \
+  --attribute-definitions AttributeName=pk,AttributeType=S AttributeName=sk,AttributeType=S \
+  --key-schema AttributeName=pk,KeyType=HASH AttributeName=sk,KeyType=RANGE \
+  --billing-mode PAY_PER_REQUEST
+
+  awslocal dynamodb update-time-to-live \
+  --table-name jobs \
+  --time-to-live-specification Enabled=true,AttributeName=ttl
