@@ -53,7 +53,7 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
       - ./localstack/init:/etc/localstack/init/ready.d:ro
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:4566/_localstack/health"]
+      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:4566/_localstack/health')"]
       interval: 5s
       timeout: 3s
       retries: 10
