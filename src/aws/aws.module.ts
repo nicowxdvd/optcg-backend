@@ -14,7 +14,7 @@ const awsOptions = (config: ConfigService) => ({
 @Global()
 @Module({
   providers: [
-    { provide: S3_CLIENT,     inject: [ConfigService], useFactory: (config: ConfigService) => new S3Client({ ...awsOptions(config), forcePathStyle: true }) },
+    { provide: S3_CLIENT,     inject: [ConfigService], useFactory: (config: ConfigService) => new S3Client({ ...awsOptions(config), forcePathStyle: true, requestChecksumCalculation: 'WHEN_REQUIRED' }) },
     { provide: DYNAMO_CLIENT, inject: [ConfigService], useFactory: (config: ConfigService) => DynamoDBDocumentClient.from(new DynamoDBClient(awsOptions(config))) },
   ],
   exports: [S3_CLIENT, DYNAMO_CLIENT],
