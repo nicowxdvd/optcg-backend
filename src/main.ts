@@ -1,5 +1,6 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe, VersioningType } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { AppModule } from './app.module';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 
@@ -10,6 +11,7 @@ async function bootstrap() {
     defaultVersion: '1',
   });
   app.useGlobalPipes(new ValidationPipe({transform : true}))
+  app.enableCors({ origin: app.get(ConfigService).get<string>('CORS_ORIGIN', 'http://localhost:5173') });
 
   const config = new DocumentBuilder()
                       .setTitle('OPTCG API')

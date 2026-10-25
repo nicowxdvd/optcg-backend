@@ -8,6 +8,7 @@ x-api-base: &api-base
     DB_PASSWORD: ${MYSQL_ROOT_PASSWORD}
     REDIS_URL: redis://redis:6379
     AWS_ENDPOINT_URL: http://localstack:4566
+    S3_PUBLIC_ENDPOINT: http://localhost:4566
 services:
   redis:
     image: redis:7-alpine
@@ -53,7 +54,7 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
       - ./localstack/init:/etc/localstack/init/ready.d:ro
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:4566/_localstack/health"]
+      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:4566/_localstack/health')"]
       interval: 5s
       timeout: 3s
       retries: 10
