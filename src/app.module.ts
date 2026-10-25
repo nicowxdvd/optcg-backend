@@ -6,6 +6,7 @@ import { SyncModule } from './sync/sync.module';
 import { RedisModule } from './redis/redis.module';
 import { AwsModule } from './aws/aws.module';
 import { LeadersModule } from './leaders/leaders.module';
+import { UploadsModule } from './uploads/uploads.module';
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { LeadersModule } from './leaders/leaders.module';
     CardsModule,
     LeadersModule,
     SyncModule,
+    UploadsModule,
   ],
   controllers: [],
   providers: [],
