@@ -1,7 +1,9 @@
 import { DynamoDBClient, ConditionalCheckFailedException } from '@aws-sdk/client-dynamodb';
 import { DynamoDBDocumentClient, UpdateCommand } from '@aws-sdk/lib-dynamodb';
 import type { S3Event, SQSEvent } from 'aws-lambda';
+import { SNSClient, PublishCommand } from '@aws-sdk/client-sns';
 
+const sns = new SNSClient({});
 const dynamo  = DynamoDBDocumentClient.from(new DynamoDBClient({}));
 const JOB_KEY = /^incoming\/([^/]+)\//;
 
@@ -21,6 +23,11 @@ const markFailed = async (jobId: string): Promise<void> => {
                 ':pending'    : 'PENDING',
                 ':processing' : 'PROCESSING'
             }
+        }));
+
+        await sns.send(new PublishCommand({
+            TopicArn : process.env.SNS_TOPIC_ARN,
+            Message  : JSON.stringify({ jobId, status: 'FAILED', at: new Date().toISOString(), error: 'MAX_RETRIES_EXCEEDED' })
         }));
     } catch (err) {
         if (err instanceof ConditionalCheckFailedException)

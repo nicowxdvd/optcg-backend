@@ -8,7 +8,7 @@ awslocal lambda create-function \
   --role arn:aws:iam::000000000000:role/lambda-role \
   --timeout 30 \
   --zip-file fileb:///tmp/processor.zip \
-  --environment 'Variables={AWS_ENDPOINT_URL=http://localhost.localstack.cloud:4566}'
+  --environment 'Variables={AWS_ENDPOINT_URL=http://localhost.localstack.cloud:4566,SNS_TOPIC_ARN=arn:aws:sns:us-east-1:000000000000:job-status}'
 
 QUEUE_ARN=$(awslocal sqs get-queue-attributes \
   --queue-url http://sqs.us-east-1.localhost.localstack.cloud:4566/000000000000/process-queue \
@@ -28,7 +28,7 @@ awslocal lambda create-function \
   --role arn:aws:iam::000000000000:role/lambda-role \
   --timeout 30 \
   --zip-file fileb:///tmp/fail-handler.zip \
-  --environment 'Variables={AWS_ENDPOINT_URL=http://localhost.localstack.cloud:4566}'
+  --environment 'Variables={AWS_ENDPOINT_URL=http://localhost.localstack.cloud:4566,SNS_TOPIC_ARN=arn:aws:sns:us-east-1:000000000000:job-status}'
 
 DLQ_ARN=$(awslocal sqs get-queue-attributes \
   --queue-url http://sqs.us-east-1.localhost.localstack.cloud:4566/000000000000/process-dlq \

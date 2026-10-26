@@ -2,10 +2,23 @@ import { DynamoDBClient, ConditionalCheckFailedException } from '@aws-sdk/client
 import { DynamoDBDocumentClient, UpdateCommand } from '@aws-sdk/lib-dynamodb';
 import type { S3Event, SQSEvent } from 'aws-lambda';
 import { S3Client, CopyObjectCommand } from '@aws-sdk/client-s3';
+import { SNSClient, PublishCommand } from '@aws-sdk/client-sns';
 
+const sns = new SNSClient({});
 const s3      = new S3Client({ forcePathStyle: true });
 const dynamo  = DynamoDBDocumentClient.from(new DynamoDBClient({}));
 const JOB_KEY = /^incoming\/([^/]+)\//;
+
+
+
+const publish = async (jobId: string, status: string): Promise<void> => {
+    await sns.send(new PublishCommand({
+        TopicArn : process.env.SNS_TOPIC_ARN,
+        Message  : JSON.stringify({ jobId, status, at: new Date().toISOString() })
+    }));
+};
+
+
 
 const markProcessing = async (jobId: string): Promise<void> => {
     try {
@@ -17,6 +30,8 @@ const markProcessing = async (jobId: string): Promise<void> => {
             ExpressionAttributeNames  : { '#status': 'status', '#ttl': 'ttl' },
             ExpressionAttributeValues : { ':processing': 'PROCESSING', ':pending': 'PENDING' }
         }));
+
+        await publish(jobId, 'PROCESSING');
     } catch (err) {
         if (err instanceof ConditionalCheckFailedException) 
             return;
@@ -46,6 +61,8 @@ const markCompleted = async (jobId: string): Promise<void> => {
             ExpressionAttributeNames  : { '#status': 'status' },
             ExpressionAttributeValues : { ':completed': 'COMPLETED', ':processing': 'PROCESSING' }
         }));
+
+        await publish(jobId, 'COMPLETED');
     } catch (err) {
         if (err instanceof ConditionalCheckFailedException)
             return;
