@@ -9,6 +9,7 @@ x-api-base: &api-base
     REDIS_URL: redis://redis:6379
     AWS_ENDPOINT_URL: http://localstack:4566
     S3_PUBLIC_ENDPOINT: http://localhost:4566
+    STATUS_QUEUE_URL: http://localstack:4566/000000000000/status-queue
 services:
   redis:
     image: redis:7-alpine
