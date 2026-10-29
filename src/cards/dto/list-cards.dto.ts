@@ -1,6 +1,7 @@
 import { ApiPropertyOptional } from "@nestjs/swagger";
 import { Transform, Type } from "class-transformer";
 import { IsInt, IsOptional, IsString, Max, MaxLength, Min } from "class-validator";
+import { IsExclusiveWith, IsGreaterOrEqualTo } from "../../common/validators/cost-range.validators";
 
 const toOptionalInt = ({ value }: { value: unknown }) => typeof value === 'string' ? (value.trim() === '' ? undefined : Number(value)) : value;
 
@@ -47,6 +48,7 @@ export class ListCardsDto {
   @Transform(toOptionalInt)
   @IsInt({ message: 'cost debe ser un número entero' })
   @Min(0, { message: 'cost debe ser mayor o igual a $constraint1' })
+  @IsExclusiveWith(['costMin', 'costMax'], { message: 'cost no se puede combinar con costMin ni costMax' })
   cost?: number;
 
 
@@ -65,6 +67,7 @@ export class ListCardsDto {
   @Transform(toOptionalInt)
   @IsInt({ message: 'costMax debe ser un número entero' })
   @Min(0, { message: 'costMax debe ser mayor o igual a $constraint1' })
+  @IsGreaterOrEqualTo('costMin', { message: 'costMax debe ser mayor o igual a costMin' })
   costMax?: number;
 
 }
