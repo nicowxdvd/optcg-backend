@@ -1,12 +1,14 @@
-import { Inject, Injectable } from "@nestjs/common";
+import { Inject, Injectable, NotFoundException } from "@nestjs/common";
 import { DYNAMO_CLIENT, S3_PRESIGN_CLIENT } from "../aws/aws.constants";
 import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
-import { DynamoDBDocumentClient, PutCommand } from "@aws-sdk/lib-dynamodb";
+import { DynamoDBDocumentClient, GetCommand, PutCommand } from "@aws-sdk/lib-dynamodb";
 import { ConfigService } from "@nestjs/config";
 import { randomUUID } from "crypto";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { CreateUploadDto } from "./dto/CreateUploadDto";
 
+
+interface JobItem { jobId: string; status: string; error?: string }
 const EXTENSIONS: Record<string, string> = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp' };
 
 const URL_EXPIRES_IN = 300;
@@ -47,6 +49,17 @@ export class UploadsService {
         );
 
         return { jobId, uploadUrl, expiresIn: URL_EXPIRES_IN };
+    }
+
+
+
+    async get(jobId: string): Promise<{ jobId: string; status: string; error?: string }> {
+        const { Item } = await this.dynamo.send(new GetCommand({ TableName: 'jobs', Key: { pk: `JOB#${jobId}`, sk: 'META' } }));
+        if (!Item)
+            throw new NotFoundException('Upload not found');
+
+        const job = Item as JobItem;
+        return { jobId: job.jobId, status: job.status, ...(job.error && { error: job.error }) };
     }
     
 }

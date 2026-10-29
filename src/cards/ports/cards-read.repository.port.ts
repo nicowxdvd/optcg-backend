@@ -5,6 +5,9 @@ export const CARDS_READ_REPOSITORY = Symbol('CARDS_READ_REPOSITORY');
 export interface CardFilters {
     name?: string;
     code?: string;
+    cost?: number;
+    costMin?: number;
+    costMax?: number;    
 }
 
 export interface CardsReadRepositoryPort {

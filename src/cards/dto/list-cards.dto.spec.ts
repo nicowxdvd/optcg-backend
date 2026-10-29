@@ -57,4 +57,103 @@ describe('ListCardsDto', () => {
 
   });
 
+  describe.each(['cost', 'costMin', 'costMax'] as const)('%s', (field) => {
+
+    it.each([
+      { input: '3',  expected: 3         },
+      { input: '0',  expected: 0         },
+      { input: ' 7 ', expected: 7        },
+      { input: 4,    expected: 4         },
+      { input: '',   expected: undefined },
+      { input: '  ', expected: undefined },
+    ])('"$input" se normaliza a $expected', async ({ input, expected }) => {
+      const dto = build({ [field]: input });
+
+      expect(dto[field]).toBe(expected);
+      expect(await validate(dto)).toHaveLength(0);
+
+    });
+
+
+    it('es opcional', async () => {
+      const dto = build({});
+
+      expect(dto[field]).toBeUndefined();
+      expect(await validate(dto)).toHaveLength(0);
+
+    });
+
+
+    it.each(['abc', '1.5', 'NaN', '3abc', 2.5])('rechaza %p por no ser entero', async (input) => {
+      const errors = await validate(build({ [field]: input }));
+
+      expect(errors).toHaveLength(1);
+      expect(errors[0].constraints).toHaveProperty('isInt', `${field} debe ser un número entero`);
+
+    });
+
+
+    it('rechaza valores negativos', async () => {
+      const errors = await validate(build({ [field]: '-1' }));
+
+      expect(errors).toHaveLength(1);
+      expect(errors[0].constraints).toHaveProperty('min', `${field} debe ser mayor o igual a 0`);
+
+    });
+
+  });
+
+
+  describe('rango de coste', () => {
+
+    it('acepta costMin igual a costMax', async () => {
+      expect(await validate(build({ costMin: '3', costMax: '3' }))).toHaveLength(0);
+
+    });
+
+
+    it('acepta costMin menor que costMax', async () => {
+      expect(await validate(build({ costMin: '2', costMax: '5' }))).toHaveLength(0);
+
+    });
+
+
+    it('acepta solo costMin o solo costMax', async () => {
+      expect(await validate(build({ costMin: '2' }))).toHaveLength(0);
+      expect(await validate(build({ costMax: '5' }))).toHaveLength(0);
+
+    });
+
+
+    it('rechaza costMin mayor que costMax', async () => {
+      const errors = await validate(build({ costMin: '5', costMax: '2' }));
+
+      expect(errors.length).toBeGreaterThan(0);
+
+    });
+
+
+    it('rechaza cost junto con costMin', async () => {
+      const errors = await validate(build({ cost: '3', costMin: '1' }));
+
+      expect(errors.length).toBeGreaterThan(0);
+
+    });
+
+
+    it('rechaza cost junto con costMax', async () => {
+      const errors = await validate(build({ cost: '3', costMax: '5' }));
+
+      expect(errors.length).toBeGreaterThan(0);
+
+    });
+
+
+    it('combina cost con page, limit, name y code', async () => {
+      expect(await validate(build({ cost: '3', page: '2', limit: '10', name: 'izo', code: 'op01' }))).toHaveLength(0);
+
+    });
+
+  });
+
 });

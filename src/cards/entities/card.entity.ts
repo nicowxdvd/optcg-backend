@@ -18,15 +18,18 @@ export class CardEntity {
     @Column({ type: 'varchar',length: 100})
     name!: string;
 
+    @Index()
     @Column({ type: 'varchar',length: 100 })
     type!: CardType;
 
     @Column({ type: 'varchar', length: 20 })
     rarity!: string;
 
+    @Index()
     @Column({ type: 'varchar', length: 50 })
     color!: string;
 
+    @Index()
     @Column({ type: 'int', nullable: true })
     cost!: number | null;
 
