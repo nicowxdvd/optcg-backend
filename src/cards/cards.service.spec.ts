@@ -78,6 +78,58 @@ describe('CardsService', () => {
     });
 
 
+    it('pasa cost al repositorio', async () => {
+      findPage.mockResolvedValue({ items: [], total: 0 });
+
+      await service.list({ page: 1, limit: 20, cost: 3 });
+
+      expect(findPage).toHaveBeenCalledWith(0, 20, { name: undefined, code: undefined, cost: 3, costMin: undefined, costMax: undefined });
+
+    });
+
+
+    it('pasa cost 0 al repositorio', async () => {
+      findPage.mockResolvedValue({ items: [], total: 0 });
+
+      await service.list({ page: 1, limit: 20, cost: 0 });
+
+      expect(findPage).toHaveBeenCalledWith(0, 20, expect.objectContaining({ cost: 0 }));
+
+    });
+
+
+    it('pasa costMin y costMax al repositorio', async () => {
+      findPage.mockResolvedValue({ items: [], total: 0 });
+
+      await service.list({ page: 1, limit: 20, costMin: 2, costMax: 5 });
+
+      expect(findPage).toHaveBeenCalledWith(0, 20, { name: undefined, code: undefined, cost: undefined, costMin: 2, costMax: 5 });
+
+    });
+
+
+    it('combina el rango de cost con name, code y la paginación', async () => {
+      findPage.mockResolvedValue({ items: [], total: 25 });
+
+      const result = await service.list({ page: 2, limit: 10, name: 'izo', code: 'OP01', costMin: 2, costMax: 5 });
+
+      expect(findPage).toHaveBeenCalledWith(10, 10, { name: 'izo', code: 'OP01', cost: undefined, costMin: 2, costMax: 5 });
+      expect(result).toEqual({ items: [], total: 25, page: 2, totalPages: 3 });
+
+    });
+
+
+    it('combina cost exacto con name y la paginación', async () => {
+      findPage.mockResolvedValue({ items: [], total: 12 });
+
+      const result = await service.list({ page: 3, limit: 5, name: 'izo', cost: 4 });
+
+      expect(findPage).toHaveBeenCalledWith(10, 5, expect.objectContaining({ name: 'izo', cost: 4 }));
+      expect(result).toEqual({ items: [], total: 12, page: 3, totalPages: 3 });
+
+    });
+
+
     it('mapea cada entity a CardResponseDto', async () => {
       findPage.mockResolvedValue({ items: [makeCard('OP01-001'), makeCard('OP01-002')], total: 2 });
 
