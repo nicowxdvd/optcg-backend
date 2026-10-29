@@ -1,4 +1,4 @@
-import { Like, Repository } from 'typeorm';
+import { Between, LessThanOrEqual, Like, MoreThanOrEqual, Repository } from 'typeorm';
 import { CardsReadRepository } from './cards-read.repository';
 import { CardEntity } from '../entities/card.entity';
 
@@ -56,6 +56,78 @@ describe('CardsReadRepository', () => {
       await repository.findPage(0, 20, { code: 'OP_01%' });
 
       expect(findAndCount).toHaveBeenCalledWith(expect.objectContaining({ where: { cardCode: Like('OP\\_01\\%%') } }));
+
+    });
+
+
+    it('filtra cost por valor exacto', async () => {
+      await repository.findPage(0, 20, { cost: 3 });
+
+      expect(findAndCount).toHaveBeenCalledWith(expect.objectContaining({ where: { cost: 3 } }));
+
+    });
+
+
+    it('filtra cost 0 sin descartarlo', async () => {
+      await repository.findPage(0, 20, { cost: 0 });
+
+      expect(findAndCount).toHaveBeenCalledWith(expect.objectContaining({ where: { cost: 0 } }));
+
+    });
+
+
+    it('filtra por rango con costMin y costMax', async () => {
+      await repository.findPage(0, 20, { costMin: 2, costMax: 5 });
+
+      expect(findAndCount).toHaveBeenCalledWith(expect.objectContaining({ where: { cost: Between(2, 5) } }));
+
+    });
+
+
+    it('filtra con costMin igual a costMax', async () => {
+      await repository.findPage(0, 20, { costMin: 3, costMax: 3 });
+
+      expect(findAndCount).toHaveBeenCalledWith(expect.objectContaining({ where: { cost: Between(3, 3) } }));
+
+    });
+
+
+    it('filtra solo con costMin', async () => {
+      await repository.findPage(0, 20, { costMin: 4 });
+
+      expect(findAndCount).toHaveBeenCalledWith(expect.objectContaining({ where: { cost: MoreThanOrEqual(4) } }));
+
+    });
+
+
+    it('filtra solo con costMax', async () => {
+      await repository.findPage(0, 20, { costMax: 4 });
+
+      expect(findAndCount).toHaveBeenCalledWith(expect.objectContaining({ where: { cost: LessThanOrEqual(4) } }));
+
+    });
+
+
+    it('filtra costMin 0 sin descartarlo', async () => {
+      await repository.findPage(0, 20, { costMin: 0, costMax: 2 });
+
+      expect(findAndCount).toHaveBeenCalledWith(expect.objectContaining({ where: { cost: Between(0, 2) } }));
+
+    });
+
+
+    it('combina cost con name, code y la paginación', async () => {
+      await repository.findPage(10, 5, { name: 'izo', code: 'OP01', cost: 3 });
+
+      expect(findAndCount).toHaveBeenCalledWith({ where: { name: Like('%izo%'), cardCode: Like('OP01%'), cost: 3 }, order: { cardCode: 'ASC', id: 'ASC' }, skip: 10, take: 5 });
+
+    });
+
+
+    it('combina el rango de cost con name y la paginación', async () => {
+      await repository.findPage(20, 10, { name: 'izo', costMin: 2, costMax: 5 });
+
+      expect(findAndCount).toHaveBeenCalledWith({ where: { name: Like('%izo%'), cost: Between(2, 5) }, order: { cardCode: 'ASC', id: 'ASC' }, skip: 20, take: 10 });
 
     });
 

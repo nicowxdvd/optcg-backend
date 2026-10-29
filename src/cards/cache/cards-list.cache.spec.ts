@@ -75,6 +75,32 @@ describe('CardsListCache', () => {
 
 
 
+  it.each([
+    { a: { cost: 3 },               b: { cost: 5 }               },
+    { a: { cost: 3 },               b: {}                        },
+    { a: { cost: 0 },               b: {}                        },
+    { a: { costMin: 2 },            b: { costMin: 3 }            },
+    { a: { costMax: 2 },            b: { costMax: 3 }            },
+    { a: { costMin: 2 },            b: { costMax: 2 }            },
+    { a: { costMin: 2, costMax: 5 }, b: { costMin: 2, costMax: 6 } },
+  ])('no comparte key entre $a y $b', async ({ a, b }) => {
+    await cache.set({ ...query, ...a }, result);
+
+    expect(await cache.get({ ...query, ...b })).toBeNull();
+
+  });
+
+
+
+  it('comparte key entre queries con el mismo coste', async () => {
+    await cache.set({ ...query, costMin: 2, costMax: 5 }, result);
+
+    expect(await cache.get({ ...query, costMin: 2, costMax: 5 })).toEqual(result);
+
+  });
+
+
+
   it('invalidate hace que lo guardado antes ya no se encuentre', async () => {
     await cache.set(query, result);
     await cache.invalidate();
