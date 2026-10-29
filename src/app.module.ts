@@ -8,6 +8,7 @@ import { AwsModule } from './aws/aws.module';
 import { LeadersModule } from './leaders/leaders.module';
 import { UploadsModule } from './uploads/uploads.module';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
+import { APP_GUARD } from '@nestjs/core';
 
 @Module({
   imports: [
