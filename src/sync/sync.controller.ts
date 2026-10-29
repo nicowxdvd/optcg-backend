@@ -3,6 +3,7 @@ import { IdempotencyInterceptor } from '../common/idempotency/idempotency.interc
 import { ApiHeader } from '@nestjs/swagger';
 import { SyncCardsResponseDto } from './dto/sync-cards-response.dto';
 import { SyncService } from './sync.service';
+import { Throttle } from '@nestjs/throttler';
 
 @Controller('sync')
 export class SyncController {
@@ -14,6 +15,7 @@ export class SyncController {
 
     @Post()
     @ApiHeader({ name: 'x-idempotency-key', required: true })
+    @Throttle({ default: { ttl: 60_000, limit: 2 } })
     @UseInterceptors(IdempotencyInterceptor)
     async syncCards(): Promise<SyncCardsResponseDto> {
         await this.syncService.syncCards();
