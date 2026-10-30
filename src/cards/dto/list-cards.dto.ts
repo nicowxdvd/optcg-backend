@@ -24,6 +24,15 @@ export class ListCardsDto {
   limit: number = 20;
 
 
+  
+  @ApiPropertyOptional({ maxLength: 100, example: 'luffy' })
+  @IsOptional()
+  @Transform(({ value }: { value: unknown }) => typeof value === 'string' ? (value.trim() || undefined) : value)
+  @IsString({ message: 'q debe ser un texto' })
+  @MaxLength(100, { message: 'q debe tener como máximo $constraint1 caracteres' })
+  q?: string;
+
+
 
   @ApiPropertyOptional({ maxLength: 100 })
   @IsOptional()

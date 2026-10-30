@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Brackets, Repository } from 'typeorm';
 import { escapeLike, traitExists } from '../../utils/utils';
 import { LeaderFilters, LeadersReadRepositoryPort } from '../ports/leaders-read.repository.port';
 import { LeaderEntity } from '../../cards/entities/leader.entity';
@@ -13,7 +13,7 @@ export class LeadersReadRepository implements LeadersReadRepositoryPort {
     {}
 
 
-    async findPage(skip: number, take: number,  { name, code, color, trait }: LeaderFilters) {
+    async findPage(skip: number, take: number,  { q, name, code, color, trait }: LeaderFilters) {
         const qb = this.typeormRepo.createQueryBuilder('leader')
             .leftJoinAndSelect('leader.set', 'set')
             .leftJoinAndSelect('leader.traits', 'traits')
@@ -21,6 +21,15 @@ export class LeadersReadRepository implements LeadersReadRepositoryPort {
             .addOrderBy('leader.id', 'ASC')
             .skip(skip)
             .take(take);
+
+        if (q)
+            qb.andWhere(
+                new Brackets(w => w
+                    .where('leader.name LIKE :q')
+                    .orWhere('leader.cardCode LIKE :q')
+                    .orWhere(traitExists('leader', 'leader_trait', 'leader_id', 'q'))
+                ), { q: `%${escapeLike(q)}%` }
+            );
 
         if (name)
             qb.andWhere('leader.name LIKE :name', { name: `%${escapeLike(name)}%` });

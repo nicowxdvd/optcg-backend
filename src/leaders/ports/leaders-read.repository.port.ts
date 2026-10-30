@@ -3,6 +3,7 @@ import { LeaderEntity } from '../../cards/entities/leader.entity';
 export const LEADERS_READ_REPOSITORY = Symbol('LEADERS_READ_REPOSITORY');
 
 export interface LeaderFilters {
+    q?     : string;    
     name?  : string;
     code?  : string;
     color? : string;

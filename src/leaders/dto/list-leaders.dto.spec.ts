@@ -224,6 +224,109 @@ describe('ListLeadersDto', () => {
   });
 
 
+  describe('q', () => {
+
+    it.each([
+      { input: 'luffy',     expected: 'luffy'    },
+      { input: '  Luffy  ', expected: 'Luffy'    },
+      { input: 'op01-001',  expected: 'op01-001' },
+      { input: '',          expected: undefined  },
+      { input: '   ',       expected: undefined  },
+    ])('"$input" se normaliza a $expected', async ({ input, expected }) => {
+      const dto = build({ q: input });
+
+      expect(dto.q).toBe(expected);
+      expect(await validate(dto)).toHaveLength(0);
+
+    });
+
+
+    it('es opcional', async () => {
+      const dto = build({});
+
+      expect(dto.q).toBeUndefined();
+      expect(await validate(dto)).toHaveLength(0);
+
+    });
+
+
+    it('acepta 100 caracteres', async () => {
+      expect(await validate(build({ q: 'A'.repeat(100) }))).toHaveLength(0);
+
+    });
+
+
+    it('rechaza más de 100 caracteres', async () => {
+      const errors = await validate(build({ q: 'A'.repeat(101) }));
+
+      expect(errors).toHaveLength(1);
+      expect(errors[0].constraints).toEqual({ maxLength: 'q debe tener como máximo 100 caracteres' });
+
+    });
+
+
+    it('rechaza valores que no son texto', async () => {
+      const errors = await validate(build({ q: ['luffy', 'zoro'] }));
+
+      expect(errors).toHaveLength(1);
+      expect(errors[0].constraints).toHaveProperty('isString', 'q debe ser un texto');
+
+    });
+
+  });
+
+
+  describe('trait', () => {
+
+    it.each([
+      { input: 'Straw Hat Crew',   expected: 'Straw Hat Crew' },
+      { input: '  Supernovas  ',   expected: 'Supernovas'     },
+      { input: '',                 expected: undefined        },
+      { input: '   ',              expected: undefined        },
+    ])('"$input" se normaliza a $expected', async ({ input, expected }) => {
+      const dto = build({ trait: input });
+
+      expect(dto.trait).toBe(expected);
+      expect(await validate(dto)).toHaveLength(0);
+
+    });
+
+
+    it('es opcional', async () => {
+      const dto = build({});
+
+      expect(dto.trait).toBeUndefined();
+      expect(await validate(dto)).toHaveLength(0);
+
+    });
+
+
+    it('acepta 50 caracteres', async () => {
+      expect(await validate(build({ trait: 'A'.repeat(50) }))).toHaveLength(0);
+
+    });
+
+
+    it('rechaza más de 50 caracteres', async () => {
+      const errors = await validate(build({ trait: 'A'.repeat(51) }));
+
+      expect(errors).toHaveLength(1);
+      expect(errors[0].constraints).toEqual({ maxLength: 'trait debe tener como máximo 50 caracteres' });
+
+    });
+
+
+    it('rechaza valores que no son texto', async () => {
+      const errors = await validate(build({ trait: ['Straw Hat Crew', 'Supernovas'] }));
+
+      expect(errors).toHaveLength(1);
+      expect(errors[0].constraints).toHaveProperty('isString', 'trait debe ser un texto');
+
+    });
+
+  });
+
+
   describe('color', () => {
 
     it.each([
