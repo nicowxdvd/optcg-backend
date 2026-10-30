@@ -57,6 +57,56 @@ describe('ListCardsDto', () => {
 
   });
 
+  describe('trait', () => {
+
+    it.each([
+      { input: 'Straw Hat Crew',   expected: 'Straw Hat Crew' },
+      { input: '  Supernovas  ',   expected: 'Supernovas'     },
+      { input: '',                 expected: undefined        },
+      { input: '   ',              expected: undefined        },
+    ])('"$input" se normaliza a $expected', async ({ input, expected }) => {
+      const dto = build({ trait: input });
+
+      expect(dto.trait).toBe(expected);
+      expect(await validate(dto)).toHaveLength(0);
+
+    });
+
+
+    it('es opcional', async () => {
+      const dto = build({});
+
+      expect(dto.trait).toBeUndefined();
+      expect(await validate(dto)).toHaveLength(0);
+
+    });
+
+
+    it('acepta 50 caracteres', async () => {
+      expect(await validate(build({ trait: 'A'.repeat(50) }))).toHaveLength(0);
+
+    });
+
+
+    it('rechaza más de 50 caracteres', async () => {
+      const errors = await validate(build({ trait: 'A'.repeat(51) }));
+
+      expect(errors).toHaveLength(1);
+      expect(errors[0].constraints).toEqual({ maxLength: 'trait debe tener como máximo 50 caracteres' });
+
+    });
+
+
+    it('rechaza valores que no son texto', async () => {
+      const errors = await validate(build({ trait: ['Straw Hat Crew', 'Supernovas'] }));
+
+      expect(errors).toHaveLength(1);
+      expect(errors[0].constraints).toHaveProperty('isString', 'trait debe ser un texto');
+
+    });
+
+  });
+
   describe.each(['cost', 'costMin', 'costMax'] as const)('%s', (field) => {
 
     it.each([
