@@ -32,6 +32,27 @@ describe('LeadersService', () => {
 
     });
 
+    it('pasa q al repositorio', async () => {
+      findPage.mockResolvedValue({ items: [], total: 0 });
+
+      await service.list({ page: 1, limit: 20, q: 'luffy' });
+
+      expect(findPage).toHaveBeenCalledWith(0, 20, expect.objectContaining({ q: 'luffy' }));
+
+    });
+
+
+    it('combina q con color, trait y la paginación', async () => {
+      findPage.mockResolvedValue({ items: [], total: 12 });
+
+      const result = await service.list({ page: 3, limit: 5, q: 'luffy', color: 'Red', trait: 'straw' });
+
+      expect(findPage).toHaveBeenCalledWith(10, 5, expect.objectContaining({ q: 'luffy', color: 'Red', trait: 'straw' }));
+      expect(result).toEqual({ items: [], total: 12, page: 3, totalPages: 3 });
+
+    });
+
+
     it('pasa trait al repositorio', async () => {
       findPage.mockResolvedValue({ items: [], total: 0 });
 
