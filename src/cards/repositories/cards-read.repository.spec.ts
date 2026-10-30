@@ -1,4 +1,4 @@
-import { Repository } from 'typeorm';
+import { Brackets, Repository, WhereExpressionBuilder } from 'typeorm';
 import { CardsReadRepository } from './cards-read.repository';
 import { CardEntity } from '../entities/card.entity';
 import { traitExists } from '../../utils/utils';
@@ -193,6 +193,81 @@ describe('CardsReadRepository', () => {
       expect(qb.andWhere).toHaveBeenCalledWith('card.cost BETWEEN :costMin AND :costMax', { costMin: 2, costMax: 5 });
       expect(qb.skip).toHaveBeenCalledWith(20);
       expect(qb.take).toHaveBeenCalledWith(10);
+
+    });
+
+
+    describe('q', () => {
+
+      const runBrackets = (brackets: Brackets) => {
+        const inner = { where: jest.fn(), orWhere: jest.fn() };
+        inner.where.mockReturnValue(inner);
+        inner.orWhere.mockReturnValue(inner);
+
+        brackets.whereFactory(inner as unknown as WhereExpressionBuilder);
+
+        return inner;
+      };
+
+
+      it('agrega un solo bloque Brackets con el parámetro q', async () => {
+        await repository.findPage(0, 20, { q: 'luffy' });
+
+        expect(qb.andWhere).toHaveBeenCalledTimes(1);
+        expect(qb.andWhere).toHaveBeenCalledWith(expect.any(Brackets), { q: '%luffy%' });
+
+      });
+
+
+      it('busca en name, code y trait unidos con OR', async () => {
+        await repository.findPage(0, 20, { q: 'luffy' });
+
+        const inner = runBrackets(qb.andWhere.mock.calls[0][0]);
+
+        expect(inner.where).toHaveBeenCalledTimes(1);
+        expect(inner.where).toHaveBeenCalledWith('card.name LIKE :q');
+        expect(inner.orWhere).toHaveBeenCalledTimes(2);
+        expect(inner.orWhere).toHaveBeenCalledWith('card.cardCode LIKE :q');
+        expect(inner.orWhere).toHaveBeenCalledWith(traitExists('card', 'card_trait', 'card_id', 'q'));
+
+      });
+
+
+      it('busca el code por contenido y no por prefijo', async () => {
+        await repository.findPage(0, 20, { q: '001' });
+
+        expect(qb.andWhere).toHaveBeenCalledWith(expect.any(Brackets), { q: '%001%' });
+
+      });
+
+
+      it('escapa los comodines de q', async () => {
+        await repository.findPage(0, 20, { q: 'a_b%' });
+
+        expect(qb.andWhere).toHaveBeenCalledWith(expect.any(Brackets), { q: '%a\\_b\\%%' });
+
+      });
+
+
+      it('combina q con los demás filtros mediante AND', async () => {
+        await repository.findPage(10, 5, { q: 'luffy', name: 'izo', cost: 3 });
+
+        expect(qb.andWhere).toHaveBeenCalledTimes(3);
+        expect(qb.andWhere).toHaveBeenCalledWith(expect.any(Brackets), { q: '%luffy%' });
+        expect(qb.andWhere).toHaveBeenCalledWith('card.name LIKE :name', { name: '%izo%' });
+        expect(qb.andWhere).toHaveBeenCalledWith('card.cost = :cost', { cost: 3 });
+        expect(qb.skip).toHaveBeenCalledWith(10);
+        expect(qb.take).toHaveBeenCalledWith(5);
+
+      });
+
+
+      it('q vacío no agrega condiciones', async () => {
+        await repository.findPage(0, 20, { q: '' });
+
+        expect(qb.andWhere).not.toHaveBeenCalled();
+
+      });
 
     });
 
