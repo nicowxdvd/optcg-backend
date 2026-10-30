@@ -92,6 +92,28 @@ describe('CardsListCache', () => {
 
 
 
+  it('comparte key entre q en mayúsculas y minúsculas', async () => {
+    await cache.set({ ...query, q: 'Luffy' }, result);
+
+    expect(await cache.get({ ...query, q: 'luffy' })).toEqual(result);
+
+  });
+
+
+
+  it.each([
+    { a: { q: 'luffy' }, b: { q: 'zoro' } },
+    { a: { q: 'luffy' }, b: {}            },
+    { a: { q: 'luffy' }, b: { name: 'luffy' } },
+  ])('no comparte key entre $a y $b', async ({ a, b }) => {
+    await cache.set({ ...query, ...a }, result);
+
+    expect(await cache.get({ ...query, ...b })).toBeNull();
+
+  });
+
+
+
   it('comparte key entre trait en mayúsculas y minúsculas', async () => {
     await cache.set({ ...query, trait: 'Straw Hat Crew' }, result);
 
