@@ -1,29 +1,45 @@
-import { Between, LessThanOrEqual, Like, MoreThanOrEqual, Repository } from 'typeorm';
+import { Repository } from 'typeorm';
 import { CardsReadRepository } from './cards-read.repository';
 import { CardEntity } from '../entities/card.entity';
+import { traitExists } from '../../utils/utils';
 
 // @nestjs/typeorm 12 es ESM puro y jest (CommonJS) no lo carga; solo se necesita el decorador
 jest.mock('@nestjs/typeorm', () => ({ InjectRepository: () => () => undefined }));
 
+const traitClause = traitExists('card', 'card_trait', 'card_id', 'trait');
+
 describe('CardsReadRepository', () => {
 
   let repository: CardsReadRepository;
-  let findAndCount: jest.Mock;
+  let createQueryBuilder: jest.Mock;
+  let qb: Record<string, jest.Mock>;
 
   beforeEach(() => {
-    findAndCount = jest.fn().mockResolvedValue([[], 0]);
+    qb = {};
 
-    repository = new CardsReadRepository({ findAndCount } as unknown as Repository<CardEntity>);
+    for (const method of ['orderBy', 'addOrderBy', 'skip', 'take', 'andWhere'])
+      qb[method] = jest.fn().mockReturnValue(qb);
+
+    qb.getManyAndCount = jest.fn().mockResolvedValue([[], 0]);
+
+    createQueryBuilder = jest.fn().mockReturnValue(qb);
+
+    repository = new CardsReadRepository({ createQueryBuilder } as unknown as Repository<CardEntity>);
 
   });
 
 
   describe('findPage', () => {
 
-    it('sin filtros usa where vacío', async () => {
+    it('sin filtros no agrega condiciones y ordena por código e id', async () => {
       await repository.findPage(0, 20, {});
 
-      expect(findAndCount).toHaveBeenCalledWith({ where: {}, order: { cardCode: 'ASC', id: 'ASC' }, skip: 0, take: 20 });
+      expect(createQueryBuilder).toHaveBeenCalledWith('card');
+      expect(qb.andWhere).not.toHaveBeenCalled();
+      expect(qb.orderBy).toHaveBeenCalledWith('card.cardCode', 'ASC');
+      expect(qb.addOrderBy).toHaveBeenCalledWith('card.id', 'ASC');
+      expect(qb.skip).toHaveBeenCalledWith(0);
+      expect(qb.take).toHaveBeenCalledWith(20);
 
     });
 
@@ -31,7 +47,8 @@ describe('CardsReadRepository', () => {
     it('filtra code por prefijo', async () => {
       await repository.findPage(0, 20, { code: 'OP01' });
 
-      expect(findAndCount).toHaveBeenCalledWith(expect.objectContaining({ where: { cardCode: Like('OP01%') } }));
+      expect(qb.andWhere).toHaveBeenCalledTimes(1);
+      expect(qb.andWhere).toHaveBeenCalledWith('card.cardCode LIKE :code', { code: 'OP01%' });
 
     });
 
@@ -39,7 +56,8 @@ describe('CardsReadRepository', () => {
     it('filtra name por contenido', async () => {
       await repository.findPage(0, 20, { name: 'izo' });
 
-      expect(findAndCount).toHaveBeenCalledWith(expect.objectContaining({ where: { name: Like('%izo%') } }));
+      expect(qb.andWhere).toHaveBeenCalledTimes(1);
+      expect(qb.andWhere).toHaveBeenCalledWith('card.name LIKE :name', { name: '%izo%' });
 
     });
 
@@ -47,7 +65,11 @@ describe('CardsReadRepository', () => {
     it('combina name y code con la paginación', async () => {
       await repository.findPage(10, 5, { name: 'izo', code: 'OP01-001' });
 
-      expect(findAndCount).toHaveBeenCalledWith({ where: { name: Like('%izo%'), cardCode: Like('OP01-001%') }, order: { cardCode: 'ASC', id: 'ASC' }, skip: 10, take: 5 });
+      expect(qb.andWhere).toHaveBeenCalledTimes(2);
+      expect(qb.andWhere).toHaveBeenCalledWith('card.name LIKE :name', { name: '%izo%' });
+      expect(qb.andWhere).toHaveBeenCalledWith('card.cardCode LIKE :code', { code: 'OP01-001%' });
+      expect(qb.skip).toHaveBeenCalledWith(10);
+      expect(qb.take).toHaveBeenCalledWith(5);
 
     });
 
@@ -55,7 +77,37 @@ describe('CardsReadRepository', () => {
     it('escapa los comodines de code', async () => {
       await repository.findPage(0, 20, { code: 'OP_01%' });
 
-      expect(findAndCount).toHaveBeenCalledWith(expect.objectContaining({ where: { cardCode: Like('OP\\_01\\%%') } }));
+      expect(qb.andWhere).toHaveBeenCalledWith('card.cardCode LIKE :code', { code: 'OP\\_01\\%%' });
+
+    });
+
+
+    it('filtra trait por contenido con la subconsulta de traits', async () => {
+      await repository.findPage(0, 20, { trait: 'straw' });
+
+      expect(qb.andWhere).toHaveBeenCalledTimes(1);
+      expect(qb.andWhere).toHaveBeenCalledWith(traitClause, { trait: '%straw%' });
+
+    });
+
+
+    it('escapa los comodines de trait', async () => {
+      await repository.findPage(0, 20, { trait: 'Straw_Hat%' });
+
+      expect(qb.andWhere).toHaveBeenCalledWith(traitClause, { trait: '%Straw\\_Hat\\%%' });
+
+    });
+
+
+    it('combina trait con name, cost y la paginación', async () => {
+      await repository.findPage(10, 5, { name: 'izo', trait: 'straw', cost: 3 });
+
+      expect(qb.andWhere).toHaveBeenCalledTimes(3);
+      expect(qb.andWhere).toHaveBeenCalledWith('card.name LIKE :name', { name: '%izo%' });
+      expect(qb.andWhere).toHaveBeenCalledWith(traitClause, { trait: '%straw%' });
+      expect(qb.andWhere).toHaveBeenCalledWith('card.cost = :cost', { cost: 3 });
+      expect(qb.skip).toHaveBeenCalledWith(10);
+      expect(qb.take).toHaveBeenCalledWith(5);
 
     });
 
@@ -63,7 +115,8 @@ describe('CardsReadRepository', () => {
     it('filtra cost por valor exacto', async () => {
       await repository.findPage(0, 20, { cost: 3 });
 
-      expect(findAndCount).toHaveBeenCalledWith(expect.objectContaining({ where: { cost: 3 } }));
+      expect(qb.andWhere).toHaveBeenCalledTimes(1);
+      expect(qb.andWhere).toHaveBeenCalledWith('card.cost = :cost', { cost: 3 });
 
     });
 
@@ -71,7 +124,7 @@ describe('CardsReadRepository', () => {
     it('filtra cost 0 sin descartarlo', async () => {
       await repository.findPage(0, 20, { cost: 0 });
 
-      expect(findAndCount).toHaveBeenCalledWith(expect.objectContaining({ where: { cost: 0 } }));
+      expect(qb.andWhere).toHaveBeenCalledWith('card.cost = :cost', { cost: 0 });
 
     });
 
@@ -79,7 +132,8 @@ describe('CardsReadRepository', () => {
     it('filtra por rango con costMin y costMax', async () => {
       await repository.findPage(0, 20, { costMin: 2, costMax: 5 });
 
-      expect(findAndCount).toHaveBeenCalledWith(expect.objectContaining({ where: { cost: Between(2, 5) } }));
+      expect(qb.andWhere).toHaveBeenCalledTimes(1);
+      expect(qb.andWhere).toHaveBeenCalledWith('card.cost BETWEEN :costMin AND :costMax', { costMin: 2, costMax: 5 });
 
     });
 
@@ -87,7 +141,7 @@ describe('CardsReadRepository', () => {
     it('filtra con costMin igual a costMax', async () => {
       await repository.findPage(0, 20, { costMin: 3, costMax: 3 });
 
-      expect(findAndCount).toHaveBeenCalledWith(expect.objectContaining({ where: { cost: Between(3, 3) } }));
+      expect(qb.andWhere).toHaveBeenCalledWith('card.cost BETWEEN :costMin AND :costMax', { costMin: 3, costMax: 3 });
 
     });
 
@@ -95,7 +149,8 @@ describe('CardsReadRepository', () => {
     it('filtra solo con costMin', async () => {
       await repository.findPage(0, 20, { costMin: 4 });
 
-      expect(findAndCount).toHaveBeenCalledWith(expect.objectContaining({ where: { cost: MoreThanOrEqual(4) } }));
+      expect(qb.andWhere).toHaveBeenCalledTimes(1);
+      expect(qb.andWhere).toHaveBeenCalledWith('card.cost >= :costMin', { costMin: 4 });
 
     });
 
@@ -103,7 +158,8 @@ describe('CardsReadRepository', () => {
     it('filtra solo con costMax', async () => {
       await repository.findPage(0, 20, { costMax: 4 });
 
-      expect(findAndCount).toHaveBeenCalledWith(expect.objectContaining({ where: { cost: LessThanOrEqual(4) } }));
+      expect(qb.andWhere).toHaveBeenCalledTimes(1);
+      expect(qb.andWhere).toHaveBeenCalledWith('card.cost <= :costMax', { costMax: 4 });
 
     });
 
@@ -111,7 +167,7 @@ describe('CardsReadRepository', () => {
     it('filtra costMin 0 sin descartarlo', async () => {
       await repository.findPage(0, 20, { costMin: 0, costMax: 2 });
 
-      expect(findAndCount).toHaveBeenCalledWith(expect.objectContaining({ where: { cost: Between(0, 2) } }));
+      expect(qb.andWhere).toHaveBeenCalledWith('card.cost BETWEEN :costMin AND :costMax', { costMin: 0, costMax: 2 });
 
     });
 
@@ -119,7 +175,12 @@ describe('CardsReadRepository', () => {
     it('combina cost con name, code y la paginación', async () => {
       await repository.findPage(10, 5, { name: 'izo', code: 'OP01', cost: 3 });
 
-      expect(findAndCount).toHaveBeenCalledWith({ where: { name: Like('%izo%'), cardCode: Like('OP01%'), cost: 3 }, order: { cardCode: 'ASC', id: 'ASC' }, skip: 10, take: 5 });
+      expect(qb.andWhere).toHaveBeenCalledTimes(3);
+      expect(qb.andWhere).toHaveBeenCalledWith('card.name LIKE :name', { name: '%izo%' });
+      expect(qb.andWhere).toHaveBeenCalledWith('card.cardCode LIKE :code', { code: 'OP01%' });
+      expect(qb.andWhere).toHaveBeenCalledWith('card.cost = :cost', { cost: 3 });
+      expect(qb.skip).toHaveBeenCalledWith(10);
+      expect(qb.take).toHaveBeenCalledWith(5);
 
     });
 
@@ -127,14 +188,18 @@ describe('CardsReadRepository', () => {
     it('combina el rango de cost con name y la paginación', async () => {
       await repository.findPage(20, 10, { name: 'izo', costMin: 2, costMax: 5 });
 
-      expect(findAndCount).toHaveBeenCalledWith({ where: { name: Like('%izo%'), cost: Between(2, 5) }, order: { cardCode: 'ASC', id: 'ASC' }, skip: 20, take: 10 });
+      expect(qb.andWhere).toHaveBeenCalledTimes(2);
+      expect(qb.andWhere).toHaveBeenCalledWith('card.name LIKE :name', { name: '%izo%' });
+      expect(qb.andWhere).toHaveBeenCalledWith('card.cost BETWEEN :costMin AND :costMax', { costMin: 2, costMax: 5 });
+      expect(qb.skip).toHaveBeenCalledWith(20);
+      expect(qb.take).toHaveBeenCalledWith(10);
 
     });
 
 
     it('devuelve items y total', async () => {
       const items = [{ externalId: 'OP01-001' }] as CardEntity[];
-      findAndCount.mockResolvedValue([items, 1]);
+      qb.getManyAndCount.mockResolvedValue([items, 1]);
 
       await expect(repository.findPage(0, 20, {})).resolves.toEqual({ items, total: 1 });
 
