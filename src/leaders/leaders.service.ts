@@ -13,8 +13,8 @@ export class LeadersService {
 
     
 
-    async list({ page, limit, name, code, color, trait }: ListLeadersDto): Promise<PaginatedLeadersDto> {
-        const { items, total } = await this.leadersRead.findPage((page - 1) * limit, limit, {name, code, color, trait});
+    async list({ page, limit, q, name, code, color, trait }: ListLeadersDto): Promise<PaginatedLeadersDto> {
+        const { items, total } = await this.leadersRead.findPage((page - 1) * limit, limit, { q, name, code, color, trait });
 
         return {
             items      : items.map(leader => toResponse(leader)),
