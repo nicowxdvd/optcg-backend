@@ -43,6 +43,15 @@ export class ListCardsDto {
 
 
 
+  @ApiPropertyOptional({ maxLength: 50, example: 'Straw Hat Crew' })
+  @IsOptional()
+  @Transform(({ value }: { value: unknown }) => typeof value === 'string' ? (value.trim() || undefined) : value)
+  @IsString({ message: 'trait debe ser un texto' })
+  @MaxLength(50, { message: 'trait debe tener como máximo $constraint1 caracteres' })
+  trait?: string;
+
+
+
   @ApiPropertyOptional({ minimum: 0, example: 3 })
   @IsOptional()
   @Transform(toOptionalInt)
