@@ -67,6 +67,27 @@ describe('CardsService', () => {
     });
 
 
+    it('pasa trait al repositorio', async () => {
+      findPage.mockResolvedValue({ items: [], total: 0 });
+
+      await service.list({ page: 1, limit: 20, trait: 'straw' });
+
+      expect(findPage).toHaveBeenCalledWith(0, 20, expect.objectContaining({ trait: 'straw' }));
+
+    });
+
+
+    it('combina trait con cost, name y la paginación', async () => {
+      findPage.mockResolvedValue({ items: [], total: 12 });
+
+      const result = await service.list({ page: 3, limit: 5, name: 'izo', cost: 4, trait: 'straw' });
+
+      expect(findPage).toHaveBeenCalledWith(10, 5, expect.objectContaining({ name: 'izo', cost: 4, trait: 'straw' }));
+      expect(result).toEqual({ items: [], total: 12, page: 3, totalPages: 3 });
+
+    });
+
+
     it('combina name y code con la paginación', async () => {
       findPage.mockResolvedValue({ items: [], total: 25 });
 
