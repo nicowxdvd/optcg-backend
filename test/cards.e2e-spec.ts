@@ -3,7 +3,7 @@ import { Test } from '@nestjs/testing';
 import { ConfigService } from '@nestjs/config';
 import RedisMock from 'ioredis-mock';
 import request from 'supertest';
-import { Repository } from 'typeorm';
+import { Brackets, Repository, WhereExpressionBuilder } from 'typeorm';
 import { CardsListCache } from '../src/cards/cache/cards-list.cache';
 import { CardsController } from '../src/cards/cards.controller';
 import { CardsService } from '../src/cards/cards.service';
@@ -17,6 +17,16 @@ import { traitExists } from '../src/utils/utils';
 const makeCard = (externalId: string, cardCode: string) => ({ externalId, cardCode, name: 'Luffy', type: CardType.CHARACTER, rarity: 'R', color: 'Red', cost: 5, power: 7000, counterValue: null, attribute: 'Ranged', effect: null, triggerEffect: null, imageUrl: 'https://img/luffy.png' }) as CardEntity;
 
 const traitClause = traitExists('card', 'card_trait', 'card_id', 'trait');
+
+const runBrackets = (brackets: Brackets) => {
+  const inner = { where: jest.fn(), orWhere: jest.fn() };
+  inner.where.mockReturnValue(inner);
+  inner.orWhere.mockReturnValue(inner);
+
+  brackets.whereFactory(inner as unknown as WhereExpressionBuilder);
+
+  return inner;
+};
 
 // @nestjs/typeorm 12 es ESM puro y jest (CommonJS) no lo carga; solo se necesita el decorador
 jest.mock('@nestjs/typeorm', () => ({ InjectRepository: () => () => undefined }));
@@ -143,6 +153,69 @@ describe('GET /v1/cards (e2e)', () => {
 
     expect(response.body.message).toContain('code debe tener como máximo 20 caracteres');
     expect(getManyAndCount).not.toHaveBeenCalled();
+
+  });
+
+
+  describe('búsqueda q', () => {
+
+    it('q busca en name, code y trait unidos con OR', async () => {
+      getManyAndCount.mockResolvedValue([[makeCard('OP01-001', 'OP01-001')], 1]);
+
+      const response = await request(app.getHttpServer()).get('/v1/cards').query({ q: 'luffy' }).expect(200);
+
+      expect(qb.andWhere).toHaveBeenCalledTimes(1);
+      expect(qb.andWhere).toHaveBeenCalledWith(expect.any(Brackets), { q: '%luffy%' });
+
+      const inner = runBrackets(qb.andWhere.mock.calls[0][0]);
+
+      expect(inner.where).toHaveBeenCalledWith('card.name LIKE :q');
+      expect(inner.orWhere).toHaveBeenCalledWith('card.cardCode LIKE :q');
+      expect(inner.orWhere).toHaveBeenCalledWith(traitExists('card', 'card_trait', 'card_id', 'q'));
+      expect(response.body.total).toBe(1);
+
+    });
+
+
+    it('q se recorta y conserva las mayúsculas', async () => {
+      await request(app.getHttpServer()).get('/v1/cards').query({ q: '  Supernovas  ' }).expect(200);
+
+      expect(qb.andWhere).toHaveBeenCalledWith(expect.any(Brackets), { q: '%Supernovas%' });
+
+    });
+
+
+    it('q vacío no filtra', async () => {
+      await request(app.getHttpServer()).get('/v1/cards').query({ q: '' }).expect(200);
+
+      expect(qb.andWhere).not.toHaveBeenCalled();
+
+    });
+
+
+    it('combina q con cost, trait y paginación mediante AND', async () => {
+      getManyAndCount.mockResolvedValue([[], 7]);
+
+      const response = await request(app.getHttpServer()).get('/v1/cards').query({ q: 'luffy', costMax: 3, trait: 'straw', page: 2, limit: 5 }).expect(200);
+
+      expect(qb.andWhere).toHaveBeenCalledTimes(3);
+      expect(qb.andWhere).toHaveBeenCalledWith(expect.any(Brackets), { q: '%luffy%' });
+      expect(qb.andWhere).toHaveBeenCalledWith(traitClause, { trait: '%straw%' });
+      expect(qb.andWhere).toHaveBeenCalledWith('card.cost <= :costMax', { costMax: 3 });
+      expect(qb.skip).toHaveBeenCalledWith(5);
+      expect(qb.take).toHaveBeenCalledWith(5);
+      expect(response.body).toMatchObject({ total: 7, page: 2, totalPages: 2 });
+
+    });
+
+
+    it('q de más de 100 caracteres devuelve 400', async () => {
+      const response = await request(app.getHttpServer()).get('/v1/cards').query({ q: 'A'.repeat(101) }).expect(400);
+
+      expect(response.body.message).toContain('q debe tener como máximo 100 caracteres');
+      expect(getManyAndCount).not.toHaveBeenCalled();
+
+    });
 
   });
 
@@ -399,6 +472,24 @@ describe('GET /v1/cards (e2e)', () => {
     it('dos GET con el mismo coste consultan el repositorio una sola vez', async () => {
       await request(app.getHttpServer()).get('/v1/cards').query({ costMin: 2, costMax: 5 }).expect(200);
       await request(app.getHttpServer()).get('/v1/cards').query({ costMin: 2, costMax: 5 }).expect(200);
+
+      expect(getManyAndCount).toHaveBeenCalledTimes(1);
+
+    });
+
+
+    it('q distinto no comparte caché', async () => {
+      await request(app.getHttpServer()).get('/v1/cards').query({ q: 'luffy' }).expect(200);
+      await request(app.getHttpServer()).get('/v1/cards').query({ q: 'zoro' }).expect(200);
+
+      expect(getManyAndCount).toHaveBeenCalledTimes(2);
+
+    });
+
+
+    it('q en mayúsculas y minúsculas comparte caché', async () => {
+      await request(app.getHttpServer()).get('/v1/cards').query({ q: 'Luffy' }).expect(200);
+      await request(app.getHttpServer()).get('/v1/cards').query({ q: 'luffy' }).expect(200);
 
       expect(getManyAndCount).toHaveBeenCalledTimes(1);
 
