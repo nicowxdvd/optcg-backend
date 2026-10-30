@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { FindOptionsWhere, Like, Repository } from 'typeorm';
-import { escapeLike } from '../../utils/utils';
+import { Repository } from 'typeorm';
+import { escapeLike, traitExists } from '../../utils/utils';
 import { LeaderFilters, LeadersReadRepositoryPort } from '../ports/leaders-read.repository.port';
 import { LeaderEntity } from '../../cards/entities/leader.entity';
 
@@ -13,24 +13,28 @@ export class LeadersReadRepository implements LeadersReadRepositoryPort {
     {}
 
 
-    async findPage(skip: number, take: number,  { name, code, color }: LeaderFilters) {
-        const where: FindOptionsWhere<LeaderEntity> = {};
+    async findPage(skip: number, take: number,  { name, code, color, trait }: LeaderFilters) {
+        const qb = this.typeormRepo.createQueryBuilder('leader')
+            .leftJoinAndSelect('leader.set', 'set')
+            .leftJoinAndSelect('leader.traits', 'traits')
+            .orderBy('leader.cardCode', 'ASC')
+            .addOrderBy('leader.id', 'ASC')
+            .skip(skip)
+            .take(take);
+
         if (name)
-            where.name = Like(`%${escapeLike(name)}%`);
+            qb.andWhere('leader.name LIKE :name', { name: `%${escapeLike(name)}%` });
 
         if (code)
-            where.cardCode = Like(`${escapeLike(code)}%`);
+            qb.andWhere('leader.cardCode LIKE :code', { code: `${escapeLike(code)}%` });
 
         if (color)
-            where.color = Like(`%${escapeLike(color)}%`);
+            qb.andWhere('leader.color LIKE :color', { color: `%${escapeLike(color)}%` });
 
-        const [items, total] = await this.typeormRepo.findAndCount({
-            where: where,
-            relations: { set: true, traits: true },
-            order: { cardCode: 'ASC', id: 'ASC' },
-            skip,
-            take,
-        });
+        if (trait)
+            qb.andWhere(traitExists('leader', 'leader_trait', 'leader_id', 'trait'), { trait: `%${escapeLike(trait)}%` });
+
+        const [items, total] = await qb.getManyAndCount();
 
         return { items, total };
 

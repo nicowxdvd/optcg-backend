@@ -1,9 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Between, FindOptionsWhere, LessThanOrEqual, Like, MoreThanOrEqual, Repository } from 'typeorm';
+import { Repository } from 'typeorm';
 import { CardEntity } from '../entities/card.entity';
 import { CardFilters, CardsReadRepositoryPort } from '../ports/cards-read.repository.port';
-import { escapeLike } from '../../utils/utils';
+import { escapeLike, traitExists } from '../../utils/utils';
 
 @Injectable()
 export class CardsReadRepository implements CardsReadRepositoryPort {
@@ -13,31 +13,35 @@ export class CardsReadRepository implements CardsReadRepositoryPort {
     {}
 
 
-    async findPage(skip: number, take: number,  { name, code, cost, costMin, costMax }: CardFilters) {
-        const where: FindOptionsWhere<CardEntity> = {};
+    async findPage(skip: number, take: number,  { name, code, cost, costMin, costMax, trait }: CardFilters) {
+        const qb = this.typeormRepo.createQueryBuilder('card')
+            .orderBy('card.cardCode', 'ASC')
+            .addOrderBy('card.id', 'ASC')
+            .skip(skip)
+            .take(take);
+
         if (name)
-            where.name = Like(`%${escapeLike(name)}%`);
+            qb.andWhere('card.name LIKE :name', { name: `%${escapeLike(name)}%` });
 
         if (code)
-            where.cardCode = Like(`${escapeLike(code)}%`);
+            qb.andWhere('card.cardCode LIKE :code', { code: `${escapeLike(code)}%` });
 
         if (cost !== undefined)
-            where.cost = cost;
+            qb.andWhere('card.cost = :cost', { cost });
+
         else if (costMin !== undefined && costMax !== undefined)
-            where.cost = Between(costMin, costMax);
-
-        else if (costMin !== undefined)
-            where.cost = MoreThanOrEqual(costMin);
+            qb.andWhere('card.cost BETWEEN :costMin AND :costMax', { costMin, costMax });
         
-        else if (costMax !== undefined)
-            where.cost = LessThanOrEqual(costMax);
+        else if (costMin !== undefined)
+            qb.andWhere('card.cost >= :costMin', { costMin });
 
-        const [items, total] = await this.typeormRepo.findAndCount({
-            where: where,
-            order: { cardCode: 'ASC', id: 'ASC' },
-            skip,
-            take,
-        });
+        else if (costMax !== undefined)
+            qb.andWhere('card.cost <= :costMax', { costMax });
+
+        if (trait)
+            qb.andWhere(traitExists('card', 'card_trait', 'card_id', 'trait'), { trait: `%${escapeLike(trait)}%` });
+        
+        const [items, total] = await qb.getManyAndCount();
 
         return { items, total };
 

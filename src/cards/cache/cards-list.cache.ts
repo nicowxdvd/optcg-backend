@@ -69,9 +69,9 @@ export class CardsListCache {
 
 
 
-    private async buildKey({ page, limit, name, code, cost, costMin, costMax }: ListCardsDto): Promise<string> {
+    private async buildKey({ page, limit, name, code, cost, costMin, costMax, trait }: ListCardsDto): Promise<string> {
         const version = await this.redis.get(this.VERSION_KEY) ?? '0';
-        const payload = JSON.stringify({ page, limit, name: name?.toLowerCase(), code,  cost, costMin, costMax });
+        const payload = JSON.stringify({ page, limit, name: name?.toLowerCase(), code,  cost, costMin, costMax, trait: trait?.toLowerCase() });
         const hash    = createHash('sha256').update(payload).digest('hex');
 
         return `cards:list:v${version}:${hash}`;

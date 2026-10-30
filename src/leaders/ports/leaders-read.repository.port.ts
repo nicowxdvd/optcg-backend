@@ -6,6 +6,7 @@ export interface LeaderFilters {
     name?  : string;
     code?  : string;
     color? : string;
+    trait? : string;
 
 }
 
