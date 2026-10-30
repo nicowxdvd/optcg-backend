@@ -1,7 +1,7 @@
 import { INestApplication, ValidationPipe, VersioningType } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import request from 'supertest';
-import { Repository } from 'typeorm';
+import { Brackets, Repository, WhereExpressionBuilder } from 'typeorm';
 import { LeaderEntity } from '../src/cards/entities/leader.entity';
 import { LeadersController } from '../src/leaders/leaders.controller';
 import { LeadersService } from '../src/leaders/leaders.service';
@@ -12,6 +12,16 @@ import { traitExists } from '../src/utils/utils';
 const makeLeader = (externalId: string, cardCode: string) => ({ externalId, cardCode, name: 'Monkey.D.Luffy', rarity: 'L', color: 'Red', life: 5, power: 5000, attribute: 'Strike', effect: null, imageUrl: 'https://img/luffy.png', set: { name: 'Romance Dawn' }, traits: [{ name: 'Supernovas' }, { name: 'Straw Hat Crew' }] }) as LeaderEntity;
 
 const traitClause = traitExists('leader', 'leader_trait', 'leader_id', 'trait');
+
+const runBrackets = (brackets: Brackets) => {
+  const inner = { where: jest.fn(), orWhere: jest.fn() };
+  inner.where.mockReturnValue(inner);
+  inner.orWhere.mockReturnValue(inner);
+
+  brackets.whereFactory(inner as unknown as WhereExpressionBuilder);
+
+  return inner;
+};
 
 // @nestjs/typeorm 12 es ESM puro y jest (CommonJS) no lo carga; solo se necesita el decorador
 jest.mock('@nestjs/typeorm', () => ({ InjectRepository: () => () => undefined }));
@@ -108,9 +118,82 @@ describe('GET /v1/leaders (e2e)', () => {
 
 
   it('filtros vacíos no filtran', async () => {
-    await request(app.getHttpServer()).get('/v1/leaders').query({ name: '', code: '', color: '', trait: '' }).expect(200);
+    await request(app.getHttpServer()).get('/v1/leaders').query({ name: '', code: '', color: '', trait: '', q: '' }).expect(200);
 
     expect(qb.andWhere).not.toHaveBeenCalled();
+
+  });
+
+
+  describe('búsqueda q', () => {
+
+    it('q busca en name, code y trait unidos con OR', async () => {
+      getManyAndCount.mockResolvedValue([[makeLeader('OP01-001', 'OP01-001')], 1]);
+
+      const response = await request(app.getHttpServer()).get('/v1/leaders').query({ q: 'luffy' }).expect(200);
+
+      expect(qb.andWhere).toHaveBeenCalledTimes(1);
+      expect(qb.andWhere).toHaveBeenCalledWith(expect.any(Brackets), { q: '%luffy%' });
+
+      const inner = runBrackets(qb.andWhere.mock.calls[0][0]);
+
+      expect(inner.where).toHaveBeenCalledWith('leader.name LIKE :q');
+      expect(inner.orWhere).toHaveBeenCalledWith('leader.cardCode LIKE :q');
+      expect(inner.orWhere).toHaveBeenCalledWith(traitExists('leader', 'leader_trait', 'leader_id', 'q'));
+      expect(response.body.total).toBe(1);
+
+    });
+
+
+    it('el leader encontrado por q conserva todos sus traits', async () => {
+      getManyAndCount.mockResolvedValue([[makeLeader('OP01-001', 'OP01-001')], 1]);
+
+      const response = await request(app.getHttpServer()).get('/v1/leaders').query({ q: 'supernovas' }).expect(200);
+
+      expect(response.body.items[0].traits).toEqual(['Straw Hat Crew', 'Supernovas']);
+
+    });
+
+
+    it('q se recorta y conserva las mayúsculas', async () => {
+      await request(app.getHttpServer()).get('/v1/leaders').query({ q: '  Supernovas  ' }).expect(200);
+
+      expect(qb.andWhere).toHaveBeenCalledWith(expect.any(Brackets), { q: '%Supernovas%' });
+
+    });
+
+
+    it('q vacío no filtra', async () => {
+      await request(app.getHttpServer()).get('/v1/leaders').query({ q: '' }).expect(200);
+
+      expect(qb.andWhere).not.toHaveBeenCalled();
+
+    });
+
+
+    it('combina q con color, trait y paginación mediante AND', async () => {
+      getManyAndCount.mockResolvedValue([[], 7]);
+
+      const response = await request(app.getHttpServer()).get('/v1/leaders').query({ q: 'luffy', color: 'red', trait: 'straw', page: 2, limit: 5 }).expect(200);
+
+      expect(qb.andWhere).toHaveBeenCalledTimes(3);
+      expect(qb.andWhere).toHaveBeenCalledWith(expect.any(Brackets), { q: '%luffy%' });
+      expect(qb.andWhere).toHaveBeenCalledWith('leader.color LIKE :color', { color: '%RED%' });
+      expect(qb.andWhere).toHaveBeenCalledWith(traitClause, { trait: '%straw%' });
+      expect(qb.skip).toHaveBeenCalledWith(5);
+      expect(qb.take).toHaveBeenCalledWith(5);
+      expect(response.body).toMatchObject({ total: 7, page: 2, totalPages: 2 });
+
+    });
+
+
+    it('q de más de 100 caracteres devuelve 400', async () => {
+      const response = await request(app.getHttpServer()).get('/v1/leaders').query({ q: 'A'.repeat(101) }).expect(400);
+
+      expect(response.body.message).toContain('q debe tener como máximo 100 caracteres');
+      expect(getManyAndCount).not.toHaveBeenCalled();
+
+    });
 
   });
 
