@@ -24,11 +24,11 @@ export class CardsReadRepository implements CardsReadRepositoryPort {
         if (q)
             qb.andWhere(
                 new Brackets(w => w
-                        .where('card.name LIKE :q')
-                        .orWhere('card.cardCode LIKE :q')
-                        .orWhere(traitExists('card', 'card_trait', 'card_id', 'q'))
-                    ), { q: `%${escapeLike(q)}%` }
-                );
+                    .where('card.name LIKE :q')
+                    .orWhere('card.cardCode LIKE :q')
+                    .orWhere(traitExists('card', 'card_trait', 'card_id', 'q'))
+                ), { q: `%${escapeLike(q)}%` }
+            );
 
         if (name)
             qb.andWhere('card.name LIKE :name', { name: `%${escapeLike(name)}%` });
