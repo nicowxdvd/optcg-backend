@@ -318,6 +318,64 @@ describe('GET /v1/cards (e2e)', () => {
   });
 
 
+  describe('filtro por type', () => {
+
+    it('type filtra por igualdad exacta', async () => {
+      getManyAndCount.mockResolvedValue([[makeCard('OP01-001', 'OP01-001')], 1]);
+
+      const response = await request(app.getHttpServer()).get('/v1/cards').query({ type: 'EVENT' }).expect(200);
+
+      expect(qb.andWhere).toHaveBeenCalledTimes(1);
+      expect(qb.andWhere).toHaveBeenCalledWith('card.type = :type', { type: CardType.EVENT });
+      expect(response.body.total).toBe(1);
+
+    });
+
+
+    it('type se recorta y se normaliza a mayúsculas', async () => {
+      await request(app.getHttpServer()).get('/v1/cards').query({ type: '  character  ' }).expect(200);
+
+      expect(qb.andWhere).toHaveBeenCalledWith('card.type = :type', { type: CardType.CHARACTER });
+
+    });
+
+
+    it('type vacío no filtra', async () => {
+      await request(app.getHttpServer()).get('/v1/cards').query({ type: '' }).expect(200);
+
+      expect(qb.andWhere).not.toHaveBeenCalled();
+
+    });
+
+
+    it('type que no es un tipo de carta devuelve 400', async () => {
+      const response = await request(app.getHttpServer()).get('/v1/cards').query({ type: 'MONSTER' }).expect(400);
+
+      expect(response.body.message).toEqual([expect.stringContaining('type debe ser uno de')]);
+      expect(getManyAndCount).not.toHaveBeenCalled();
+
+    });
+
+
+    it('combina color y type con cost, name y paginación', async () => {
+      getManyAndCount.mockResolvedValue([[], 7]);
+
+      const response = await request(app.getHttpServer()).get('/v1/cards').query({ color: 'red', type: 'character', costMax: 3, name: 'lu', page: 2, limit: 5 }).expect(200);
+
+      expect(qb.andWhere).toHaveBeenCalledTimes(4);
+      expect(qb.andWhere).toHaveBeenCalledWith('card.name LIKE :name', { name: '%lu%' });
+      expect(qb.andWhere).toHaveBeenCalledWith('card.cost <= :costMax', { costMax: 3 });
+      expect(qb.andWhere).toHaveBeenCalledWith('card.color LIKE :color', { color: '%RED%' });
+      expect(qb.andWhere).toHaveBeenCalledWith('card.type = :type', { type: CardType.CHARACTER });
+      expect(qb.skip).toHaveBeenCalledWith(5);
+      expect(qb.take).toHaveBeenCalledWith(5);
+      expect(response.body).toMatchObject({ total: 7, page: 2, totalPages: 2 });
+
+    });
+
+  });
+
+
   describe('filtro por coste', () => {
 
     it('cost filtra por valor exacto', async () => {
