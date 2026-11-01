@@ -11,8 +11,14 @@ async function bootstrap() {
     defaultVersion: '1',
   });
   app.useGlobalPipes(new ValidationPipe({transform : true}))
-  app.enableCors({ origin: app.get(ConfigService).get<string>('CORS_ORIGIN', 'http://localhost:5173') });
-
+  const origins = app.get(ConfigService).get<string>('CORS_ORIGINS', 'http://localhost:3000').split(',').map(o => o.trim()).filter(Boolean);
+  app.enableCors({
+    origin               : origins,
+    methods              : ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders       : ['Content-Type', 'Accept', 'Authorization'],
+    credentials          : false,
+    optionsSuccessStatus : 204,
+  });
   const config = new DocumentBuilder()
                       .setTitle('OPTCG API')
                       .setVersion('1.0')

@@ -14,7 +14,7 @@ export class CardsReadRepository implements CardsReadRepositoryPort {
 
 
 
-    async findPage(skip: number, take: number,  { q, name, code, cost, costMin, costMax, trait }: CardFilters) {
+    async findPage(skip: number, take: number,  { q, name, code, cost, costMin, costMax, trait, color, type }: CardFilters) {
         const qb = this.typeormRepo.createQueryBuilder('card')
             .orderBy('card.cardCode', 'ASC')
             .addOrderBy('card.id', 'ASC')
@@ -51,6 +51,12 @@ export class CardsReadRepository implements CardsReadRepositoryPort {
         if (trait)
             qb.andWhere(traitExists('card', 'card_trait', 'card_id', 'trait'), { trait: `%${escapeLike(trait)}%` });
         
+        if (color)
+            qb.andWhere('card.color LIKE :color', { color: `%${escapeLike(color)}%` });
+
+        if (type)
+            qb.andWhere('card.type = :type', { type });
+
         const [items, total] = await qb.getManyAndCount();
 
         return { items, total };
