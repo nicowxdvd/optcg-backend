@@ -357,6 +357,15 @@ describe('GET /v1/cards (e2e)', () => {
     });
 
 
+    it('type LEADER devuelve 400', async () => {
+      const response = await request(app.getHttpServer()).get('/v1/cards').query({ type: 'LEADER' }).expect(400);
+
+      expect(response.body.message).toEqual(['type debe ser uno de: CHARACTER, EVENT, STAGE']);
+      expect(getManyAndCount).not.toHaveBeenCalled();
+
+    });
+
+
     it('combina color y type con cost, name y paginación', async () => {
       getManyAndCount.mockResolvedValue([[], 7]);
 
