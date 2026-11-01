@@ -613,6 +613,42 @@ describe('GET /v1/cards (e2e)', () => {
     });
 
 
+    it('color distinto no comparte caché', async () => {
+      await request(app.getHttpServer()).get('/v1/cards').query({ color: 'RED' }).expect(200);
+      await request(app.getHttpServer()).get('/v1/cards').query({ color: 'BLUE' }).expect(200);
+
+      expect(getManyAndCount).toHaveBeenCalledTimes(2);
+
+    });
+
+
+    it('color en mayúsculas y minúsculas comparte caché', async () => {
+      await request(app.getHttpServer()).get('/v1/cards').query({ color: 'Red' }).expect(200);
+      await request(app.getHttpServer()).get('/v1/cards').query({ color: 'red' }).expect(200);
+
+      expect(getManyAndCount).toHaveBeenCalledTimes(1);
+
+    });
+
+
+    it('type distinto no comparte caché', async () => {
+      await request(app.getHttpServer()).get('/v1/cards').query({ type: 'CHARACTER' }).expect(200);
+      await request(app.getHttpServer()).get('/v1/cards').query({ type: 'EVENT' }).expect(200);
+
+      expect(getManyAndCount).toHaveBeenCalledTimes(2);
+
+    });
+
+
+    it('dos GET con el mismo color y type consultan el repositorio una sola vez', async () => {
+      await request(app.getHttpServer()).get('/v1/cards').query({ color: 'RED', type: 'EVENT' }).expect(200);
+      await request(app.getHttpServer()).get('/v1/cards').query({ color: 'RED', type: 'EVENT' }).expect(200);
+
+      expect(getManyAndCount).toHaveBeenCalledTimes(1);
+
+    });
+
+
     it('name en mayúsculas y minúsculas comparte caché', async () => {
       await request(app.getHttpServer()).get('/v1/cards').query({ name: 'Luffy' }).expect(200);
       await request(app.getHttpServer()).get('/v1/cards').query({ name: 'luffy' }).expect(200);
