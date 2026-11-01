@@ -21,8 +21,8 @@ export class CardsService {
             return cached;
         }
 
-        const { page, limit, q, name, code, cost, costMin, costMax, trait } = query;
-        const { items, total } = await this.cardsRead.findPage((page - 1) * limit, limit, { q, name, code, cost, costMin, costMax, trait });
+        const { page, limit, q, name, code, cost, costMin, costMax, trait, color, type } = query;
+        const { items, total } = await this.cardsRead.findPage((page - 1) * limit, limit, { q, name, code, cost, costMin, costMax, trait, color, type });
 
         const result = {
             items      : items.map(card => toResponse(card)),

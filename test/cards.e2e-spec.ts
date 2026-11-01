@@ -277,6 +277,114 @@ describe('GET /v1/cards (e2e)', () => {
   });
 
 
+  describe('filtro por color', () => {
+
+    it('color filtra por contenido', async () => {
+      getManyAndCount.mockResolvedValue([[makeCard('OP01-001', 'OP01-001')], 1]);
+
+      const response = await request(app.getHttpServer()).get('/v1/cards').query({ color: 'RED' }).expect(200);
+
+      expect(qb.andWhere).toHaveBeenCalledTimes(1);
+      expect(qb.andWhere).toHaveBeenCalledWith('card.color LIKE :color', { color: '%RED%' });
+      expect(response.body.total).toBe(1);
+
+    });
+
+
+    it('color se recorta y se normaliza a mayúsculas', async () => {
+      await request(app.getHttpServer()).get('/v1/cards').query({ color: '  red/green  ' }).expect(200);
+
+      expect(qb.andWhere).toHaveBeenCalledWith('card.color LIKE :color', { color: '%RED/GREEN%' });
+
+    });
+
+
+    it('color vacío no filtra', async () => {
+      await request(app.getHttpServer()).get('/v1/cards').query({ color: '' }).expect(200);
+
+      expect(qb.andWhere).not.toHaveBeenCalled();
+
+    });
+
+
+    it('color de más de 50 caracteres devuelve 400', async () => {
+      const response = await request(app.getHttpServer()).get('/v1/cards').query({ color: 'A'.repeat(51) }).expect(400);
+
+      expect(response.body.message).toContain('color debe tener como máximo 50 caracteres');
+      expect(getManyAndCount).not.toHaveBeenCalled();
+
+    });
+
+  });
+
+
+  describe('filtro por type', () => {
+
+    it('type filtra por igualdad exacta', async () => {
+      getManyAndCount.mockResolvedValue([[makeCard('OP01-001', 'OP01-001')], 1]);
+
+      const response = await request(app.getHttpServer()).get('/v1/cards').query({ type: 'EVENT' }).expect(200);
+
+      expect(qb.andWhere).toHaveBeenCalledTimes(1);
+      expect(qb.andWhere).toHaveBeenCalledWith('card.type = :type', { type: CardType.EVENT });
+      expect(response.body.total).toBe(1);
+
+    });
+
+
+    it('type se recorta y se normaliza a mayúsculas', async () => {
+      await request(app.getHttpServer()).get('/v1/cards').query({ type: '  character  ' }).expect(200);
+
+      expect(qb.andWhere).toHaveBeenCalledWith('card.type = :type', { type: CardType.CHARACTER });
+
+    });
+
+
+    it('type vacío no filtra', async () => {
+      await request(app.getHttpServer()).get('/v1/cards').query({ type: '' }).expect(200);
+
+      expect(qb.andWhere).not.toHaveBeenCalled();
+
+    });
+
+
+    it('type que no es un tipo de carta devuelve 400', async () => {
+      const response = await request(app.getHttpServer()).get('/v1/cards').query({ type: 'MONSTER' }).expect(400);
+
+      expect(response.body.message).toEqual([expect.stringContaining('type debe ser uno de')]);
+      expect(getManyAndCount).not.toHaveBeenCalled();
+
+    });
+
+
+    it('type LEADER devuelve 400', async () => {
+      const response = await request(app.getHttpServer()).get('/v1/cards').query({ type: 'LEADER' }).expect(400);
+
+      expect(response.body.message).toEqual(['type debe ser uno de: CHARACTER, EVENT, STAGE']);
+      expect(getManyAndCount).not.toHaveBeenCalled();
+
+    });
+
+
+    it('combina color y type con cost, name y paginación', async () => {
+      getManyAndCount.mockResolvedValue([[], 7]);
+
+      const response = await request(app.getHttpServer()).get('/v1/cards').query({ color: 'red', type: 'character', costMax: 3, name: 'lu', page: 2, limit: 5 }).expect(200);
+
+      expect(qb.andWhere).toHaveBeenCalledTimes(4);
+      expect(qb.andWhere).toHaveBeenCalledWith('card.name LIKE :name', { name: '%lu%' });
+      expect(qb.andWhere).toHaveBeenCalledWith('card.cost <= :costMax', { costMax: 3 });
+      expect(qb.andWhere).toHaveBeenCalledWith('card.color LIKE :color', { color: '%RED%' });
+      expect(qb.andWhere).toHaveBeenCalledWith('card.type = :type', { type: CardType.CHARACTER });
+      expect(qb.skip).toHaveBeenCalledWith(5);
+      expect(qb.take).toHaveBeenCalledWith(5);
+      expect(response.body).toMatchObject({ total: 7, page: 2, totalPages: 2 });
+
+    });
+
+  });
+
+
   describe('filtro por coste', () => {
 
     it('cost filtra por valor exacto', async () => {
@@ -508,6 +616,42 @@ describe('GET /v1/cards (e2e)', () => {
     it('trait en mayúsculas y minúsculas comparte caché', async () => {
       await request(app.getHttpServer()).get('/v1/cards').query({ trait: 'Straw' }).expect(200);
       await request(app.getHttpServer()).get('/v1/cards').query({ trait: 'straw' }).expect(200);
+
+      expect(getManyAndCount).toHaveBeenCalledTimes(1);
+
+    });
+
+
+    it('color distinto no comparte caché', async () => {
+      await request(app.getHttpServer()).get('/v1/cards').query({ color: 'RED' }).expect(200);
+      await request(app.getHttpServer()).get('/v1/cards').query({ color: 'BLUE' }).expect(200);
+
+      expect(getManyAndCount).toHaveBeenCalledTimes(2);
+
+    });
+
+
+    it('color en mayúsculas y minúsculas comparte caché', async () => {
+      await request(app.getHttpServer()).get('/v1/cards').query({ color: 'Red' }).expect(200);
+      await request(app.getHttpServer()).get('/v1/cards').query({ color: 'red' }).expect(200);
+
+      expect(getManyAndCount).toHaveBeenCalledTimes(1);
+
+    });
+
+
+    it('type distinto no comparte caché', async () => {
+      await request(app.getHttpServer()).get('/v1/cards').query({ type: 'CHARACTER' }).expect(200);
+      await request(app.getHttpServer()).get('/v1/cards').query({ type: 'EVENT' }).expect(200);
+
+      expect(getManyAndCount).toHaveBeenCalledTimes(2);
+
+    });
+
+
+    it('dos GET con el mismo color y type consultan el repositorio una sola vez', async () => {
+      await request(app.getHttpServer()).get('/v1/cards').query({ color: 'RED', type: 'EVENT' }).expect(200);
+      await request(app.getHttpServer()).get('/v1/cards').query({ color: 'RED', type: 'EVENT' }).expect(200);
 
       expect(getManyAndCount).toHaveBeenCalledTimes(1);
 

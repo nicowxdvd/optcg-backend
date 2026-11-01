@@ -1,10 +1,11 @@
 import { ApiPropertyOptional } from "@nestjs/swagger";
 import { Transform, Type } from "class-transformer";
-import { IsInt, IsOptional, IsString, Max, MaxLength, Min } from "class-validator";
+import { IsIn, IsInt, IsOptional, IsString, Max, MaxLength, Min } from "class-validator";
 import { IsExclusiveWith, IsGreaterOrEqualTo } from "../../common/validators/cost-range.validators";
+import { CardType } from "../enums/card-type.enum";
 
-const toOptionalInt = ({ value }: { value: unknown }) => typeof value === 'string' ? (value.trim() === '' ? undefined : Number(value)) : value;
-
+const toOptionalInt    = ({ value }: { value: unknown }) => typeof value === 'string' ? (value.trim() === '' ? undefined : Number(value)) : value;
+const FILTERABLE_TYPES = Object.values(CardType).filter(type => type !== CardType.LEADER);
 export class ListCardsDto {
   @ApiPropertyOptional({ default: 1, minimum: 1 })
   @IsOptional()
@@ -87,5 +88,22 @@ export class ListCardsDto {
   @Min(0, { message: 'costMax debe ser mayor o igual a $constraint1' })
   @IsGreaterOrEqualTo('costMin', { message: 'costMax debe ser mayor o igual a costMin' })
   costMax?: number;
+
+
+
+  @ApiPropertyOptional({ maxLength: 50, example: 'RED/GREEN' })
+  @IsOptional()
+  @Transform(({ value }: { value: unknown }) => typeof value === 'string' ? (value.trim().toUpperCase() || undefined) : value)
+  @IsString({ message: 'color debe ser un texto' })
+  @MaxLength(50, { message: 'color debe tener como máximo $constraint1 caracteres' })
+  color?: string;
+
+
+
+  @ApiPropertyOptional({ enum: FILTERABLE_TYPES, example: CardType.CHARACTER })
+  @IsOptional()
+  @Transform(({ value }: { value: unknown }) => typeof value === 'string' ? (value.trim().toUpperCase() || undefined) : value)
+  @IsIn(FILTERABLE_TYPES, { message: 'type debe ser uno de: $constraint1' })
+  type?: CardType;
 
 }

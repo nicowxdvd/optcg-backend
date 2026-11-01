@@ -1,6 +1,7 @@
 import { Brackets, Repository, WhereExpressionBuilder } from 'typeorm';
 import { CardsReadRepository } from './cards-read.repository';
 import { CardEntity } from '../entities/card.entity';
+import { CardType } from '../enums/card-type.enum';
 import { traitExists } from '../../utils/utils';
 
 // @nestjs/typeorm 12 es ESM puro y jest (CommonJS) no lo carga; solo se necesita el decorador
@@ -105,6 +106,46 @@ describe('CardsReadRepository', () => {
       expect(qb.andWhere).toHaveBeenCalledTimes(3);
       expect(qb.andWhere).toHaveBeenCalledWith('card.name LIKE :name', { name: '%izo%' });
       expect(qb.andWhere).toHaveBeenCalledWith(traitClause, { trait: '%straw%' });
+      expect(qb.andWhere).toHaveBeenCalledWith('card.cost = :cost', { cost: 3 });
+      expect(qb.skip).toHaveBeenCalledWith(10);
+      expect(qb.take).toHaveBeenCalledWith(5);
+
+    });
+
+
+    it('filtra color por contenido', async () => {
+      await repository.findPage(0, 20, { color: 'RED' });
+
+      expect(qb.andWhere).toHaveBeenCalledTimes(1);
+      expect(qb.andWhere).toHaveBeenCalledWith('card.color LIKE :color', { color: '%RED%' });
+
+    });
+
+
+    it('escapa los comodines de color', async () => {
+      await repository.findPage(0, 20, { color: 'RED_%' });
+
+      expect(qb.andWhere).toHaveBeenCalledWith('card.color LIKE :color', { color: '%RED\\_\\%%' });
+
+    });
+
+
+    it('filtra type por igualdad exacta', async () => {
+      await repository.findPage(0, 20, { type: CardType.EVENT });
+
+      expect(qb.andWhere).toHaveBeenCalledTimes(1);
+      expect(qb.andWhere).toHaveBeenCalledWith('card.type = :type', { type: CardType.EVENT });
+
+    });
+
+
+    it('combina color y type con name, cost y la paginación', async () => {
+      await repository.findPage(10, 5, { name: 'izo', color: 'RED/GREEN', type: CardType.CHARACTER, cost: 3 });
+
+      expect(qb.andWhere).toHaveBeenCalledTimes(4);
+      expect(qb.andWhere).toHaveBeenCalledWith('card.name LIKE :name', { name: '%izo%' });
+      expect(qb.andWhere).toHaveBeenCalledWith('card.color LIKE :color', { color: '%RED/GREEN%' });
+      expect(qb.andWhere).toHaveBeenCalledWith('card.type = :type', { type: CardType.CHARACTER });
       expect(qb.andWhere).toHaveBeenCalledWith('card.cost = :cost', { cost: 3 });
       expect(qb.skip).toHaveBeenCalledWith(10);
       expect(qb.take).toHaveBeenCalledWith(5);
