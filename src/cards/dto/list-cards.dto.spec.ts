@@ -346,6 +346,16 @@ describe('ListCardsDto', () => {
     });
 
 
+    it('rechaza LEADER porque se filtra en su propio endpoint', async () => {
+      const errors = await validate(build({ type: 'leader' }));
+
+      expect(errors).toHaveLength(1);
+      expect(errors[0].property).toBe('type');
+      expect(errors[0].constraints).toEqual({ isIn: 'type debe ser uno de: CHARACTER, EVENT, STAGE' });
+
+    });
+
+
     it('rechaza valores que no son texto', async () => {
       const errors = await validate(build({ type: ['EVENT', 'STAGE'] }));
 
