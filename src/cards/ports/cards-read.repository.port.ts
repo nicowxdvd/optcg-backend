@@ -1,4 +1,5 @@
 import { CardEntity } from '../entities/card.entity';
+import { CardType } from '../enums/card-type.enum';
 
 export const CARDS_READ_REPOSITORY = Symbol('CARDS_READ_REPOSITORY');
 
@@ -9,7 +10,9 @@ export interface CardFilters {
     cost?    : number;
     costMin? : number;
     costMax? : number;
-    trait?   : string;   
+    trait?   : string;
+    color?   : string;
+    type?    : CardType;   
 }
 
 export interface CardsReadRepositoryPort {
