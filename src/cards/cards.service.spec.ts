@@ -109,6 +109,37 @@ describe('CardsService', () => {
     });
 
 
+    it('pasa color al repositorio', async () => {
+      findPage.mockResolvedValue({ items: [], total: 0 });
+
+      await service.list({ page: 1, limit: 20, color: 'RED' });
+
+      expect(findPage).toHaveBeenCalledWith(0, 20, expect.objectContaining({ color: 'RED' }));
+
+    });
+
+
+    it('pasa type al repositorio', async () => {
+      findPage.mockResolvedValue({ items: [], total: 0 });
+
+      await service.list({ page: 1, limit: 20, type: CardType.EVENT });
+
+      expect(findPage).toHaveBeenCalledWith(0, 20, expect.objectContaining({ type: CardType.EVENT }));
+
+    });
+
+
+    it('combina color y type con cost, name y la paginación', async () => {
+      findPage.mockResolvedValue({ items: [], total: 12 });
+
+      const result = await service.list({ page: 3, limit: 5, name: 'izo', cost: 4, color: 'RED/GREEN', type: CardType.CHARACTER });
+
+      expect(findPage).toHaveBeenCalledWith(10, 5, expect.objectContaining({ name: 'izo', cost: 4, color: 'RED/GREEN', type: CardType.CHARACTER }));
+      expect(result).toEqual({ items: [], total: 12, page: 3, totalPages: 3 });
+
+    });
+
+
     it('combina name y code con la paginación', async () => {
       findPage.mockResolvedValue({ items: [], total: 25 });
 
