@@ -1,11 +1,11 @@
 import { ApiPropertyOptional } from "@nestjs/swagger";
 import { Transform, Type } from "class-transformer";
-import { IsEnum, IsInt, IsOptional, IsString, Max, MaxLength, Min } from "class-validator";
+import { IsIn, IsInt, IsOptional, IsString, Max, MaxLength, Min } from "class-validator";
 import { IsExclusiveWith, IsGreaterOrEqualTo } from "../../common/validators/cost-range.validators";
 import { CardType } from "../enums/card-type.enum";
 
-const toOptionalInt = ({ value }: { value: unknown }) => typeof value === 'string' ? (value.trim() === '' ? undefined : Number(value)) : value;
-
+const toOptionalInt    = ({ value }: { value: unknown }) => typeof value === 'string' ? (value.trim() === '' ? undefined : Number(value)) : value;
+const FILTERABLE_TYPES = Object.values(CardType).filter(type => type !== CardType.LEADER);
 export class ListCardsDto {
   @ApiPropertyOptional({ default: 1, minimum: 1 })
   @IsOptional()
@@ -100,10 +100,10 @@ export class ListCardsDto {
 
 
 
-  @ApiPropertyOptional({ enum: CardType, example: CardType.CHARACTER })
+  @ApiPropertyOptional({ enum: FILTERABLE_TYPES, example: CardType.CHARACTER })
   @IsOptional()
   @Transform(({ value }: { value: unknown }) => typeof value === 'string' ? (value.trim().toUpperCase() || undefined) : value)
-  @IsEnum(CardType, { message: 'type debe ser uno de: $constraint2' })
+  @IsIn(FILTERABLE_TYPES, { message: 'type debe ser uno de: $constraint1' })
   type?: CardType;
 
 }
