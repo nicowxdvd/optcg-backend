@@ -5,6 +5,7 @@ import { ConfigService } from '@nestjs/config';
 import { CardsListCache } from './cards-list.cache';
 import { ListCardsDto } from '../dto/list-cards.dto';
 import { PaginatedCardsDto } from '../dto/paginated-cards.dto';
+import { CardType } from '../enums/card-type.enum';
 
 jest.mock('@nestjs/config', () => ({ ConfigService: class {} }));
 
@@ -130,6 +131,40 @@ describe('CardsListCache', () => {
     await cache.set({ ...query, ...a }, result);
 
     expect(await cache.get({ ...query, ...b })).toBeNull();
+
+  });
+
+
+
+  it('comparte key entre color en mayúsculas y minúsculas', async () => {
+    await cache.set({ ...query, color: 'RED/GREEN' }, result);
+
+    expect(await cache.get({ ...query, color: 'red/green' })).toEqual(result);
+
+  });
+
+
+
+  it.each([
+    { a: { color: 'RED' },  b: { color: 'BLUE' }  },
+    { a: { color: 'RED' },  b: {}                 },
+    { a: { color: 'RED' },  b: { color: 'RED/GREEN' } },
+    { a: { type: CardType.CHARACTER }, b: { type: CardType.EVENT } },
+    { a: { type: CardType.CHARACTER }, b: {}                       },
+    { a: { color: 'RED' },  b: { type: CardType.EVENT } },
+  ])('no comparte key entre $a y $b', async ({ a, b }) => {
+    await cache.set({ ...query, ...a }, result);
+
+    expect(await cache.get({ ...query, ...b })).toBeNull();
+
+  });
+
+
+
+  it('comparte key entre queries con el mismo color y type', async () => {
+    await cache.set({ ...query, color: 'RED', type: CardType.EVENT }, result);
+
+    expect(await cache.get({ ...query, color: 'RED', type: CardType.EVENT })).toEqual(result);
 
   });
 
