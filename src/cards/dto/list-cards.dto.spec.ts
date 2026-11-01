@@ -258,4 +258,108 @@ describe('ListCardsDto', () => {
 
   });
 
+
+  describe('color', () => {
+
+    it.each([
+      { input: 'Red/Green',   expected: 'RED/GREEN' },
+      { input: 'green',       expected: 'GREEN' },
+      { input: '  purple  ', expected: 'PURPLE' },
+      { input: '',            expected: undefined },
+      { input: '   ',         expected: undefined },
+    ])('"$input" se normaliza a $expected', async ({ input, expected }) => {
+      const dto = build({ color: input });
+
+      expect(dto.color).toBe(expected);
+      expect(await validate(dto)).toHaveLength(0);
+
+    });
+
+
+    it('es opcional', async () => {
+      const dto = build({});
+
+      expect(dto.color).toBeUndefined();
+      expect(await validate(dto)).toHaveLength(0);
+
+    });
+
+
+    it('acepta 50 caracteres', async () => {
+      expect(await validate(build({ color: 'A'.repeat(50) }))).toHaveLength(0);
+
+    });
+
+
+    it('rechaza más de 50 caracteres', async () => {
+      const errors = await validate(build({ color: 'GREEN'.repeat(21) }));
+
+      expect(errors).toHaveLength(1);
+      expect(errors[0].constraints).toEqual({ maxLength: 'color debe tener como máximo 50 caracteres' });
+
+    });
+
+
+    it('rechaza valores que no son texto', async () => {
+      const errors = await validate(build({ color: ['RED', 'GREEN'] }));
+
+      expect(errors).toHaveLength(1);
+      expect(errors[0].constraints).toHaveProperty('isString', 'color debe ser un texto');
+
+    });
+
+  });
+
+
+  describe('type', () => {
+
+    it.each([
+      { input: 'CHARACTER',   expected: 'CHARACTER' },
+      { input: 'event',       expected: 'EVENT' },
+      { input: '  Stage  ',   expected: 'STAGE' },
+      { input: '',            expected: undefined },
+      { input: '   ',         expected: undefined },
+    ])('"$input" se normaliza a $expected', async ({ input, expected }) => {
+      const dto = build({ type: input });
+
+      expect(dto.type).toBe(expected);
+      expect(await validate(dto)).toHaveLength(0);
+
+    });
+
+
+    it('es opcional', async () => {
+      const dto = build({});
+
+      expect(dto.type).toBeUndefined();
+      expect(await validate(dto)).toHaveLength(0);
+
+    });
+
+
+    it('rechaza un valor que no es un tipo de carta', async () => {
+      const errors = await validate(build({ type: 'MONSTER' }));
+
+      expect(errors).toHaveLength(1);
+      expect(errors[0].property).toBe('type');
+
+    });
+
+
+    it('rechaza valores que no son texto', async () => {
+      const errors = await validate(build({ type: ['EVENT', 'STAGE'] }));
+
+      expect(errors).toHaveLength(1);
+      expect(errors[0].property).toBe('type');
+
+    });
+
+
+    it('combina type con color, cost y name', async () => {
+      expect(await validate(build({ type: 'character', color: 'red', cost: '3', name: 'izo' }))).toHaveLength(0);
+
+    });
+
+  });
+
 });
