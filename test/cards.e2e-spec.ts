@@ -277,6 +277,47 @@ describe('GET /v1/cards (e2e)', () => {
   });
 
 
+  describe('filtro por color', () => {
+
+    it('color filtra por contenido', async () => {
+      getManyAndCount.mockResolvedValue([[makeCard('OP01-001', 'OP01-001')], 1]);
+
+      const response = await request(app.getHttpServer()).get('/v1/cards').query({ color: 'RED' }).expect(200);
+
+      expect(qb.andWhere).toHaveBeenCalledTimes(1);
+      expect(qb.andWhere).toHaveBeenCalledWith('card.color LIKE :color', { color: '%RED%' });
+      expect(response.body.total).toBe(1);
+
+    });
+
+
+    it('color se recorta y se normaliza a mayúsculas', async () => {
+      await request(app.getHttpServer()).get('/v1/cards').query({ color: '  red/green  ' }).expect(200);
+
+      expect(qb.andWhere).toHaveBeenCalledWith('card.color LIKE :color', { color: '%RED/GREEN%' });
+
+    });
+
+
+    it('color vacío no filtra', async () => {
+      await request(app.getHttpServer()).get('/v1/cards').query({ color: '' }).expect(200);
+
+      expect(qb.andWhere).not.toHaveBeenCalled();
+
+    });
+
+
+    it('color de más de 50 caracteres devuelve 400', async () => {
+      const response = await request(app.getHttpServer()).get('/v1/cards').query({ color: 'A'.repeat(51) }).expect(400);
+
+      expect(response.body.message).toContain('color debe tener como máximo 50 caracteres');
+      expect(getManyAndCount).not.toHaveBeenCalled();
+
+    });
+
+  });
+
+
   describe('filtro por coste', () => {
 
     it('cost filtra por valor exacto', async () => {
