@@ -51,8 +51,18 @@ export class CardsReadRepository implements CardsReadRepositoryPort {
         if (trait)
             qb.andWhere(traitExists('card', 'card_trait', 'card_id', 'trait'), { trait: `%${escapeLike(trait)}%` });
         
-        if (color)
-            qb.andWhere('card.color LIKE :color', { color: `%${escapeLike(color)}%` });
+        if (color) {
+            const colors = color.split(',');
+
+            if (colors.length === 1)
+                qb.andWhere('card.color LIKE :color', { color: `%${escapeLike(color)}%` });
+
+            else
+                qb.andWhere(
+                    new Brackets(w => colors.forEach((_, i) => w.orWhere(`card.color LIKE :color${i}`))),
+                    Object.fromEntries(colors.map((value, i) => [`color${i}`, `%${escapeLike(value)}%`]))
+                );
+        }
 
         if (type)
             qb.andWhere('card.type = :type', { type });

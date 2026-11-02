@@ -315,6 +315,75 @@ describe('GET /v1/cards (e2e)', () => {
 
     });
 
+
+    it('color con varios valores filtra con OR', async () => {
+      await request(app.getHttpServer()).get('/v1/cards').query({ color: 'red,green' }).expect(200);
+
+      expect(qb.andWhere).toHaveBeenCalledTimes(1);
+      expect(qb.andWhere).toHaveBeenCalledWith(expect.any(Brackets), { color0: '%GREEN%', color1: '%RED%' });
+
+      const inner = runBrackets(qb.andWhere.mock.calls[0][0] as Brackets);
+
+      expect(inner.orWhere).toHaveBeenCalledTimes(2);
+      expect(inner.orWhere).toHaveBeenNthCalledWith(1, 'card.color LIKE :color0');
+      expect(inner.orWhere).toHaveBeenNthCalledWith(2, 'card.color LIKE :color1');
+
+    });
+
+
+    it('color con varios valores se recorta, se ordena y quita repetidos', async () => {
+      await request(app.getHttpServer()).get('/v1/cards').query({ color: ' red , Green,,RED ' }).expect(200);
+
+      expect(qb.andWhere).toHaveBeenCalledWith(expect.any(Brackets), { color0: '%GREEN%', color1: '%RED%' });
+
+    });
+
+
+    it('color con una coma suelta se trata como un solo valor', async () => {
+      await request(app.getHttpServer()).get('/v1/cards').query({ color: 'red,' }).expect(200);
+
+      expect(qb.andWhere).toHaveBeenCalledWith('card.color LIKE :color', { color: '%RED%' });
+
+    });
+
+
+    it('color con solo comas no filtra', async () => {
+      await request(app.getHttpServer()).get('/v1/cards').query({ color: ' , ' }).expect(200);
+
+      expect(qb.andWhere).not.toHaveBeenCalled();
+
+    });
+
+
+    it('color con varios valores escapa los comodines de cada uno', async () => {
+      await request(app.getHttpServer()).get('/v1/cards').query({ color: 'RED_,G%' }).expect(200);
+
+      expect(qb.andWhere).toHaveBeenCalledWith(expect.any(Brackets), { color0: '%G\\%%', color1: '%RED\\_%' });
+
+    });
+
+
+    it('color con varios valores devuelve la carta bicolor una sola vez', async () => {
+      const bicolor = { ...makeCard('OP01-002', 'OP01-002'), color: 'Red/Green' } as CardEntity;
+      getManyAndCount.mockResolvedValue([[bicolor], 1]);
+
+      const response = await request(app.getHttpServer()).get('/v1/cards').query({ color: 'RED,GREEN' }).expect(200);
+
+      expect(response.body.total).toBe(1);
+      expect(response.body.items).toHaveLength(1);
+      expect(response.body.items[0].color).toBe('Red/Green');
+
+    });
+
+
+    it('color con varios valores de más de 50 caracteres devuelve 400', async () => {
+      const response = await request(app.getHttpServer()).get('/v1/cards').query({ color: `${'A'.repeat(30)},${'B'.repeat(30)}` }).expect(400);
+
+      expect(response.body.message).toContain('color debe tener como máximo 50 caracteres');
+      expect(getManyAndCount).not.toHaveBeenCalled();
+
+    });
+
   });
 
 
@@ -636,6 +705,24 @@ describe('GET /v1/cards (e2e)', () => {
       await request(app.getHttpServer()).get('/v1/cards').query({ color: 'red' }).expect(200);
 
       expect(getManyAndCount).toHaveBeenCalledTimes(1);
+
+    });
+
+
+    it('color con los mismos valores en otro orden comparte caché', async () => {
+      await request(app.getHttpServer()).get('/v1/cards').query({ color: 'RED,GREEN' }).expect(200);
+      await request(app.getHttpServer()).get('/v1/cards').query({ color: ' green , red' }).expect(200);
+
+      expect(getManyAndCount).toHaveBeenCalledTimes(1);
+
+    });
+
+
+    it('color con un valor y con varios no comparten caché', async () => {
+      await request(app.getHttpServer()).get('/v1/cards').query({ color: 'RED' }).expect(200);
+      await request(app.getHttpServer()).get('/v1/cards').query({ color: 'RED,GREEN' }).expect(200);
+
+      expect(getManyAndCount).toHaveBeenCalledTimes(2);
 
     });
 
