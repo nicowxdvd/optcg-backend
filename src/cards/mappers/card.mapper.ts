@@ -16,5 +16,7 @@ export function toResponse(card: CardEntity): CardResponseDto {
         effect        : card.effect,
         triggerEffect : card.triggerEffect,
         imageUrl      : card.imageUrl,
+        traits        : card.traits.map(trait => trait.name).sort((a, b) => a.localeCompare(b)),
+        set           : card.set.code ?? card.set.name,
     };
 }

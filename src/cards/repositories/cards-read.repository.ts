@@ -16,6 +16,8 @@ export class CardsReadRepository implements CardsReadRepositoryPort {
 
     async findPage(skip: number, take: number,  { q, name, code, cost, costMin, costMax, trait, color, type }: CardFilters) {
         const qb = this.typeormRepo.createQueryBuilder('card')
+            .leftJoinAndSelect('card.traits', 'trait')
+            .innerJoinAndSelect('card.set', 'set')
             .orderBy('card.cardCode', 'ASC')
             .addOrderBy('card.id', 'ASC')
             .skip(skip)
