@@ -91,9 +91,14 @@ export class ListCardsDto {
 
 
 
-  @ApiPropertyOptional({ maxLength: 50, example: 'RED/GREEN' })
+  @ApiPropertyOptional({ maxLength: 50, example: 'RED,GREEN', description: 'Uno o más colores separados por coma (OR)' })
   @IsOptional()
-  @Transform(({ value }: { value: unknown }) => typeof value === 'string' ? (value.trim().toUpperCase() || undefined) : value)
+  @Transform(({ value }: { value: unknown }) => {
+    if (typeof value !== 'string') 
+      return value; 
+    const colors = [...new Set(value.split(',').map(color => color.trim().toUpperCase()).filter(Boolean))].sort();
+    return colors.length ? colors.join(',') : undefined;
+  })
   @IsString({ message: 'color debe ser un texto' })
   @MaxLength(50, { message: 'color debe tener como máximo $constraint1 caracteres' })
   color?: string;
