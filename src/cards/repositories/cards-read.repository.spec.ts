@@ -46,6 +46,17 @@ describe('CardsReadRepository', () => {
 
   describe('findPage', () => {
 
+    const runBrackets = (brackets: Brackets) => {
+      const inner = { where: jest.fn(), orWhere: jest.fn() };
+      inner.where.mockReturnValue(inner);
+      inner.orWhere.mockReturnValue(inner);
+
+      brackets.whereFactory(inner as unknown as WhereExpressionBuilder);
+
+      return inner;
+    };
+
+
     it('sin filtros no agrega condiciones y ordena por código e id', async () => {
       await repository.findPage(0, 20, {});
 
@@ -140,6 +151,83 @@ describe('CardsReadRepository', () => {
       await repository.findPage(0, 20, { color: 'RED_%' });
 
       expect(qb.andWhere).toHaveBeenCalledWith('card.color LIKE :color', { color: '%RED\\_\\%%' });
+
+    });
+
+
+    describe('color con varios valores', () => {
+
+      it('agrega un solo bloque Brackets con un parámetro por color', async () => {
+        await repository.findPage(0, 20, { color: 'GREEN,RED' });
+
+        expect(qb.andWhere).toHaveBeenCalledTimes(1);
+        expect(qb.andWhere).toHaveBeenCalledWith(expect.any(Brackets), { color0: '%GREEN%', color1: '%RED%' });
+
+      });
+
+
+      it('une los colores con OR', async () => {
+        await repository.findPage(0, 20, { color: 'GREEN,RED' });
+
+        const [[brackets]] = qb.andWhere.mock.calls as [Brackets][];
+        const inner = runBrackets(brackets);
+
+        expect(inner.orWhere).toHaveBeenCalledTimes(2);
+        expect(inner.orWhere).toHaveBeenNthCalledWith(1, 'card.color LIKE :color0');
+        expect(inner.orWhere).toHaveBeenNthCalledWith(2, 'card.color LIKE :color1');
+
+      });
+
+
+      it('escapa los comodines de cada color', async () => {
+        await repository.findPage(0, 20, { color: 'RED_,G%' });
+
+        expect(qb.andWhere).toHaveBeenCalledWith(expect.any(Brackets), { color0: '%RED\\_%', color1: '%G\\%%' });
+
+      });
+
+
+      it('con un solo color no usa Brackets', async () => {
+        await repository.findPage(0, 20, { color: 'RED' });
+
+        expect(qb.andWhere).toHaveBeenCalledWith('card.color LIKE :color', { color: '%RED%' });
+        expect(qb.andWhere).not.toHaveBeenCalledWith(expect.any(Brackets), expect.anything());
+
+      });
+
+
+      describe('cartas bicolor', () => {
+
+        const colors = ['Red', 'Green', 'Red/Green', 'Blue'];
+
+        const matching = async (color: string) => {
+          await repository.findPage(0, 20, { color });
+
+          const [[, params]] = qb.andWhere.mock.calls as [unknown, Record<string, string>][];
+          const patterns = Object.values(params);
+
+          return colors.filter(value => patterns.some(pattern => likeMatches(pattern, value)));
+        };
+
+
+        it('RED,GREEN trae las Red, las Green y las Red/Green', async () => {
+          expect(await matching('GREEN,RED')).toEqual(['Red', 'Green', 'Red/Green']);
+
+        });
+
+
+        it('RED trae las Red y las Red/Green', async () => {
+          expect(await matching('RED')).toEqual(['Red', 'Red/Green']);
+
+        });
+
+
+        it('RED/GREEN solo trae las Red/Green', async () => {
+          expect(await matching('RED/GREEN')).toEqual(['Red/Green']);
+
+        });
+
+      });
 
     });
 
@@ -253,17 +341,6 @@ describe('CardsReadRepository', () => {
 
 
     describe('q', () => {
-
-      const runBrackets = (brackets: Brackets) => {
-        const inner = { where: jest.fn(), orWhere: jest.fn() };
-        inner.where.mockReturnValue(inner);
-        inner.orWhere.mockReturnValue(inner);
-
-        brackets.whereFactory(inner as unknown as WhereExpressionBuilder);
-
-        return inner;
-      };
-
 
       it('agrega un solo bloque Brackets con el parámetro q', async () => {
         await repository.findPage(0, 20, { q: 'luffy' });
