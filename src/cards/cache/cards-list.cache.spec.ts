@@ -48,7 +48,7 @@ describe('CardsListCache', () => {
   it('guarda la key con TTL', async () => {
     await cache.set(query, result);
 
-    const [key] = await redis.keys('cards:list:v0:*');
+    const [key] = await redis.keys('cards:list:s2:v0:*');
     const ttl   = await redis.ttl(key);
 
     expect(ttl).toBeGreaterThan(0);
@@ -206,7 +206,7 @@ describe('CardsListCache', () => {
 
     await cache.set(query, result);
 
-    const [key] = await redis.keys('cards:list:v0:*');
+    const [key] = await redis.keys('cards:list:s2:v0:*');
     await redis.set(key, 'no-es-json');
 
     expect(await cache.get(query)).toBeNull();

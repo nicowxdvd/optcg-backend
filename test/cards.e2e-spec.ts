@@ -14,7 +14,9 @@ import { CardsReadRepository } from '../src/cards/repositories/cards-read.reposi
 import { REDIS_CLIENT } from '../src/redis/redis.constants';
 import { traitExists } from '../src/utils/utils';
 
-const makeCard = (externalId: string, cardCode: string) => ({ externalId, cardCode, name: 'Luffy', type: CardType.CHARACTER, rarity: 'R', color: 'Red', cost: 5, power: 7000, counterValue: null, attribute: 'Ranged', effect: null, triggerEffect: null, imageUrl: 'https://img/luffy.png' }) as CardEntity;
+const makeCard = (externalId: string, cardCode: string) => ({ externalId, cardCode, name: 'Luffy', type: CardType.CHARACTER, rarity: 'R', color: 'Red', cost: 5, power: 7000, counterValue: null, attribute: 'Ranged', effect: null, triggerEffect: null, imageUrl: 'https://img/luffy.png', traits: [], set: { code: 'OP01', name: 'Romance Dawn' } }) as CardEntity;
+
+type ListBody = { items: { traits: string[]; set: string }[]; total: number };
 
 const traitClause = traitExists('card', 'card_trait', 'card_id', 'trait');
 
@@ -44,7 +46,7 @@ describe('GET /v1/cards (e2e)', () => {
   beforeEach(async () => {
     qb = {};
 
-    for (const method of ['orderBy', 'addOrderBy', 'skip', 'take', 'andWhere'])
+    for (const method of ['leftJoinAndSelect', 'innerJoinAndSelect', 'orderBy', 'addOrderBy', 'skip', 'take', 'andWhere'])
       qb[method] = jest.fn().mockReturnValue(qb);
 
     getManyAndCount = jest.fn().mockResolvedValue([[], 0]);
@@ -153,6 +155,61 @@ describe('GET /v1/cards (e2e)', () => {
 
     expect(response.body.message).toContain('code debe tener como máximo 20 caracteres');
     expect(getManyAndCount).not.toHaveBeenCalled();
+
+  });
+
+
+  describe('traits y set', () => {
+
+    it('cada item trae traits ordenados y set', async () => {
+      const card = { ...makeCard('OP01-001', 'OP01-001'), traits: [{ name: 'Straw Hat Crew' }, { name: 'Animal' }] } as CardEntity;
+      getManyAndCount.mockResolvedValue([[card], 1]);
+
+      const response = await request(app.getHttpServer()).get('/v1/cards').expect(200);
+
+      const { items } = response.body as ListBody;
+
+      expect(items[0].traits).toEqual(['Animal', 'Straw Hat Crew']);
+      expect(items[0].set).toBe('OP01');
+
+    });
+
+
+    it('carta sin traits devuelve []', async () => {
+      getManyAndCount.mockResolvedValue([[makeCard('OP01-001', 'OP01-001')], 1]);
+
+      const response = await request(app.getHttpServer()).get('/v1/cards').expect(200);
+
+      expect((response.body as ListBody).items[0].traits).toEqual([]);
+
+    });
+
+
+    it('set con code null devuelve el name', async () => {
+      const card = { ...makeCard('P-001', 'P-001'), set: { code: null, name: 'Promotion Cards' } } as CardEntity;
+      getManyAndCount.mockResolvedValue([[card], 1]);
+
+      const response = await request(app.getHttpServer()).get('/v1/cards').expect(200);
+
+      expect((response.body as ListBody).items[0].set).toBe('Promotion Cards');
+
+    });
+
+
+    it('pide los joins y pagina con joins sin alterar total ni items', async () => {
+      const items = [makeCard('OP01-006', 'OP01-006'), makeCard('OP01-007', 'OP01-007'), makeCard('OP01-008', 'OP01-008'), makeCard('OP01-009', 'OP01-009'), makeCard('OP01-010', 'OP01-010')];
+      getManyAndCount.mockResolvedValue([items, 12]);
+
+      const response = await request(app.getHttpServer()).get('/v1/cards').query({ page: 2, limit: 5 }).expect(200);
+
+      expect(qb.leftJoinAndSelect).toHaveBeenCalledWith('card.traits', 'trait');
+      expect(qb.innerJoinAndSelect).toHaveBeenCalledWith('card.set', 'set');
+      expect(qb.skip).toHaveBeenCalledWith(5);
+      expect(qb.take).toHaveBeenCalledWith(5);
+      expect(response.body).toMatchObject({ total: 12, page: 2, totalPages: 3 });
+      expect((response.body as ListBody).items).toHaveLength(5);
+
+    });
 
   });
 
@@ -364,7 +421,7 @@ describe('GET /v1/cards (e2e)', () => {
 
 
     it('color con varios valores devuelve la carta bicolor una sola vez', async () => {
-      const bicolor = { ...makeCard('OP01-002', 'OP01-002'), color: 'Red/Green' } as CardEntity;
+      const bicolor = { ...makeCard('OP01-002', 'OP01-002'), color: 'Red/Green' };
       getManyAndCount.mockResolvedValue([[bicolor], 1]);
 
       const response = await request(app.getHttpServer()).get('/v1/cards').query({ color: 'RED,GREEN' }).expect(200);

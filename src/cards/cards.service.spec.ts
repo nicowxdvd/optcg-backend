@@ -7,7 +7,7 @@ import { CardsListCache } from './cache/cards-list.cache';
 
 jest.mock('@nestjs/config', () => ({ ConfigService: class {} }));
 
-const makeCard = (externalId: string) => ({ externalId, cardCode: externalId, name: 'Izo', type: CardType.CHARACTER, rarity: 'R', color: 'Red', cost: 5, power: 7000, counterValue: null, attribute: 'Ranged', effect: null, triggerEffect: null, imageUrl: 'https://img/izo.png' }) as CardEntity;
+const makeCard = (externalId: string) => ({ externalId, cardCode: externalId, name: 'Izo', type: CardType.CHARACTER, rarity: 'R', color: 'Red', cost: 5, power: 7000, counterValue: null, attribute: 'Ranged', effect: null, triggerEffect: null, imageUrl: 'https://img/izo.png', traits: [{ name: 'Straw Hat Crew' }, { name: 'Animal' }], set: { code: 'OP01', name: 'Romance Dawn' } }) as CardEntity;
 
 describe('CardsService', () => {
 
@@ -209,7 +209,7 @@ describe('CardsService', () => {
       const result = await service.list({ page: 1, limit: 20 });
 
       expect(result.items.map(item => item.externalId)).toEqual(['OP01-001', 'OP01-002']);
-      expect(result.items[0]).toEqual({ externalId: 'OP01-001', cardCode: 'OP01-001', name: 'Izo', type: CardType.CHARACTER, rarity: 'R', color: 'Red', cost: 5, power: 7000, counterValue: null, attribute: 'Ranged', effect: null, triggerEffect: null, imageUrl: 'https://img/izo.png' });
+      expect(result.items[0]).toEqual({ externalId: 'OP01-001', cardCode: 'OP01-001', name: 'Izo', type: CardType.CHARACTER, rarity: 'R', color: 'Red', cost: 5, power: 7000, counterValue: null, attribute: 'Ranged', effect: null, triggerEffect: null, imageUrl: 'https://img/izo.png', traits: ['Animal', 'Straw Hat Crew'], set: 'OP01' });
 
     });
 
