@@ -267,6 +267,14 @@ describe('ListCardsDto', () => {
       { input: '  purple  ', expected: 'PURPLE' },
       { input: '',            expected: undefined },
       { input: '   ',         expected: undefined },
+      { input: 'red,green',   expected: 'GREEN,RED' },
+      { input: 'GREEN,RED',   expected: 'GREEN,RED' },
+      { input: ' red , green ', expected: 'GREEN,RED' },
+      { input: 'red,RED,Red', expected: 'RED' },
+      { input: 'red,,green,', expected: 'GREEN,RED' },
+      { input: 'Red/Green,blue', expected: 'BLUE,RED/GREEN' },
+      { input: ' , ',         expected: undefined },
+      { input: ',',           expected: undefined },
     ])('"$input" se normaliza a $expected', async ({ input, expected }) => {
       const dto = build({ color: input });
 
