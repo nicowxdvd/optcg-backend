@@ -9,6 +9,20 @@ jest.mock('@nestjs/typeorm', () => ({ InjectRepository: () => () => undefined })
 
 const traitClause = traitExists('card', 'card_trait', 'card_id', 'trait');
 
+const likeMatches = (pattern: string, value: string) => {
+  const source = pattern.replace(/\\([%_\\])|([%_])|[.*+?^${}()|[\]\\]/g, (match: string, escaped?: string, wildcard?: string) => {
+    if (escaped)
+      return escaped === '\\' ? '\\\\' : escaped;
+
+    if (wildcard)
+      return wildcard === '%' ? '.*' : '.';
+
+    return `\\${match}`;
+  });
+
+  return new RegExp(`^${source}$`, 'i').test(value);
+};
+
 describe('CardsReadRepository', () => {
 
   let repository: CardsReadRepository;
