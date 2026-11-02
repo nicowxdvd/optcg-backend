@@ -32,7 +32,7 @@ describe('CardsReadRepository', () => {
   beforeEach(() => {
     qb = {};
 
-    for (const method of ['orderBy', 'addOrderBy', 'skip', 'take', 'andWhere'])
+    for (const method of ['leftJoinAndSelect', 'innerJoinAndSelect', 'orderBy', 'addOrderBy', 'skip', 'take', 'andWhere'])
       qb[method] = jest.fn().mockReturnValue(qb);
 
     qb.getManyAndCount = jest.fn().mockResolvedValue([[], 0]);
@@ -66,6 +66,45 @@ describe('CardsReadRepository', () => {
       expect(qb.addOrderBy).toHaveBeenCalledWith('card.id', 'ASC');
       expect(qb.skip).toHaveBeenCalledWith(0);
       expect(qb.take).toHaveBeenCalledWith(20);
+
+    });
+
+
+    it('carga traits con left join y set con inner join', async () => {
+      await repository.findPage(0, 20, {});
+
+      expect(qb.leftJoinAndSelect).toHaveBeenCalledTimes(1);
+      expect(qb.leftJoinAndSelect).toHaveBeenCalledWith('card.traits', 'trait');
+      expect(qb.innerJoinAndSelect).toHaveBeenCalledTimes(1);
+      expect(qb.innerJoinAndSelect).toHaveBeenCalledWith('card.set', 'set');
+
+    });
+
+
+    it('mantiene skip y take con los joins', async () => {
+      await repository.findPage(10, 5, {});
+
+      expect(qb.skip).toHaveBeenCalledWith(10);
+      expect(qb.take).toHaveBeenCalledWith(5);
+
+    });
+
+
+    it('los filtros trait y q no agregan joins', async () => {
+      await repository.findPage(0, 20, { trait: 'straw', q: 'luffy' });
+
+      expect(qb.leftJoinAndSelect).toHaveBeenCalledTimes(1);
+      expect(qb.innerJoinAndSelect).toHaveBeenCalledTimes(1);
+      expect(qb.andWhere).toHaveBeenCalledWith(traitClause, { trait: '%straw%' });
+
+    });
+
+
+    it('devuelve el total de getManyAndCount y no la cantidad de items', async () => {
+      const items = [{ externalId: 'OP01-001' }, { externalId: 'OP01-002' }] as CardEntity[];
+      qb.getManyAndCount.mockResolvedValue([items, 12]);
+
+      await expect(repository.findPage(5, 5, {})).resolves.toEqual({ items, total: 12 });
 
     });
 

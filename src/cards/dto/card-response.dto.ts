@@ -15,4 +15,6 @@ export class CardResponseDto {
   @ApiProperty({ type: String, nullable: true }) effect!        : string | null;
   @ApiProperty({ type: String, nullable: true }) triggerEffect! : string | null;
   @ApiProperty() imageUrl!                                      : string;
+  @ApiProperty({ type: [String] }) traits!                      : string[];
+  @ApiProperty() set!                                           : string; 
 }
