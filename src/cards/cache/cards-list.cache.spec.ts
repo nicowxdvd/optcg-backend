@@ -145,10 +145,21 @@ describe('CardsListCache', () => {
 
 
 
+  it('comparte key entre listas de colores en mayúsculas y minúsculas', async () => {
+    await cache.set({ ...query, color: 'GREEN,RED' }, result);
+
+    expect(await cache.get({ ...query, color: 'green,red' })).toEqual(result);
+
+  });
+
+
+
   it.each([
     { a: { color: 'RED' },  b: { color: 'BLUE' }  },
     { a: { color: 'RED' },  b: {}                 },
     { a: { color: 'RED' },  b: { color: 'RED/GREEN' } },
+    { a: { color: 'RED' },  b: { color: 'GREEN,RED' } },
+    { a: { color: 'GREEN,RED' },  b: { color: 'BLUE,RED' } },
     { a: { type: CardType.CHARACTER }, b: { type: CardType.EVENT } },
     { a: { type: CardType.CHARACTER }, b: {}                       },
     { a: { color: 'RED' },  b: { type: CardType.EVENT } },
