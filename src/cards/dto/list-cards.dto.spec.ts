@@ -67,6 +67,16 @@ describe('ListCardsDto', () => {
 
     });
 
+
+    it('cuenta el límite de 50 después de quitar duplicados', async () => {
+      const unique = Array.from({ length: 50 }, (_, index) => `OP01-${String(index + 1).padStart(3, '0')}`);
+      const dto    = build({ codes: [...unique, ...unique.slice(0, 10)].join(',') });
+
+      expect(dto.codes).toHaveLength(50);
+      expect(await validate(dto)).toHaveLength(0);
+
+    });
+
   });
 
   describe('q', () => {
