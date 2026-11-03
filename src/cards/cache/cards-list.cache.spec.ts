@@ -199,6 +199,16 @@ describe('CardsListCache', () => {
 
 
 
+  it('no comparte key entre queries con distintos codes', async () => {
+    await cache.set({ ...query, codes: ['OP01-016'] }, result);
+
+    expect(await cache.get({ ...query, codes: ['OP01-025'] })).toBeNull();
+    expect(await cache.get(query)).toBeNull();
+
+  });
+
+
+
   it('invalidate hace que lo guardado antes ya no se encuentre', async () => {
     await cache.set(query, result);
     await cache.invalidate();
