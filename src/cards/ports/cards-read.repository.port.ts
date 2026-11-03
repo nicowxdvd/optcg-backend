@@ -7,6 +7,7 @@ export interface CardFilters {
     q?       : string;
     name?    : string;
     code?    : string;
+    codes?   : string[];
     cost?    : number;
     costMin? : number;
     costMax? : number;

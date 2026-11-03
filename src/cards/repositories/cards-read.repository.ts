@@ -14,7 +14,7 @@ export class CardsReadRepository implements CardsReadRepositoryPort {
 
 
 
-    async findPage(skip: number, take: number,  { q, name, code, cost, costMin, costMax, trait, color, type }: CardFilters) {
+    async findPage(skip: number, take: number,  { q, name, code, codes, cost, costMin, costMax, trait, color, type }: CardFilters) {
         const qb = this.typeormRepo.createQueryBuilder('card')
             .leftJoinAndSelect('card.traits', 'trait')
             .innerJoinAndSelect('card.set', 'set')
@@ -37,6 +37,9 @@ export class CardsReadRepository implements CardsReadRepositoryPort {
 
         if (code)
             qb.andWhere('card.cardCode LIKE :code', { code: `${escapeLike(code)}%` });
+
+        if (codes?.length)
+            qb.andWhere('card.cardCode IN (:...codes)', { codes });
 
         if (cost !== undefined)
             qb.andWhere('card.cost = :cost', { cost });
