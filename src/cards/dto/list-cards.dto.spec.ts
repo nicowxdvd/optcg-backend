@@ -77,6 +77,16 @@ describe('ListCardsDto', () => {
 
     });
 
+
+    it('rechaza más de 50 códigos únicos', async () => {
+      const unique = Array.from({ length: 51 }, (_, index) => `OP01-${String(index + 1).padStart(3, '0')}`);
+      const errors = await validate(build({ codes: unique.join(',') }));
+
+      expect(errors).toHaveLength(1);
+      expect(errors[0].constraints).toEqual({ arrayMaxSize: 'codes debe tener como máximo 50 códigos' });
+
+    });
+
   });
 
   describe('q', () => {
