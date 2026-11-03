@@ -105,6 +105,15 @@ describe('ListCardsDto', () => {
 
     });
 
+
+    it('rechaza un código de más de 20 caracteres', async () => {
+      const errors = await validate(build({ codes: `OP01-016,${'A'.repeat(21)}` }));
+
+      expect(errors).toHaveLength(1);
+      expect(errors[0].constraints).toEqual({ maxLength: 'cada código de codes debe tener como máximo 20 caracteres' });
+
+    });
+
   });
 
   describe('q', () => {
