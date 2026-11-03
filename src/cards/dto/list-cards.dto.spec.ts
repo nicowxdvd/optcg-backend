@@ -87,6 +87,15 @@ describe('ListCardsDto', () => {
 
     });
 
+
+    it.each([',,', '', '   ', ' , , '])('"%s" queda en undefined y no filtra', async input => {
+      const dto = build({ codes: input });
+
+      expect(dto.codes).toBeUndefined();
+      expect(await validate(dto)).toHaveLength(0);
+
+    });
+
   });
 
   describe('q', () => {
