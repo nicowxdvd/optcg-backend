@@ -96,6 +96,15 @@ describe('ListCardsDto', () => {
 
     });
 
+
+    it('une el parámetro repetido codes=a&codes=b antes de normalizar', async () => {
+      const dto = build({ codes: ['op01-025', 'OP01-016,op01-025'] });
+
+      expect(dto.codes).toEqual(['OP01-016', 'OP01-025']);
+      expect(await validate(dto)).toHaveLength(0);
+
+    });
+
   });
 
   describe('q', () => {
