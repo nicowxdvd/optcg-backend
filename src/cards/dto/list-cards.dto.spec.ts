@@ -114,6 +114,16 @@ describe('ListCardsDto', () => {
 
     });
 
+
+    it('rechaza combinar codes con code', async () => {
+      const errors = await validate(build({ codes: 'OP01-016', code: 'OP01-025' }));
+
+      expect(errors).toHaveLength(1);
+      expect(errors[0].property).toBe('codes');
+      expect(errors[0].constraints).toEqual({ isExclusiveWith: 'codes no se puede combinar con code' });
+
+    });
+
   });
 
   describe('q', () => {
