@@ -57,6 +57,75 @@ describe('ListCardsDto', () => {
 
   });
 
+  describe('codes', () => {
+
+    it('normaliza a mayúsculas, quita espacios y duplicados, y ordena', async () => {
+      const dto = build({ codes: ' op01-025 , OP01-016,op01-025 ' });
+
+      expect(dto.codes).toEqual(['OP01-016', 'OP01-025']);
+      expect(await validate(dto)).toHaveLength(0);
+
+    });
+
+
+    it('cuenta el límite de 50 después de quitar duplicados', async () => {
+      const unique = Array.from({ length: 50 }, (_, index) => `OP01-${String(index + 1).padStart(3, '0')}`);
+      const dto    = build({ codes: [...unique, ...unique.slice(0, 10)].join(',') });
+
+      expect(dto.codes).toHaveLength(50);
+      expect(await validate(dto)).toHaveLength(0);
+
+    });
+
+
+    it('rechaza más de 50 códigos únicos', async () => {
+      const unique = Array.from({ length: 51 }, (_, index) => `OP01-${String(index + 1).padStart(3, '0')}`);
+      const errors = await validate(build({ codes: unique.join(',') }));
+
+      expect(errors).toHaveLength(1);
+      expect(errors[0].constraints).toEqual({ arrayMaxSize: 'codes debe tener como máximo 50 códigos' });
+
+    });
+
+
+    it.each([',,', '', '   ', ' , , '])('"%s" queda en undefined y no filtra', async input => {
+      const dto = build({ codes: input });
+
+      expect(dto.codes).toBeUndefined();
+      expect(await validate(dto)).toHaveLength(0);
+
+    });
+
+
+    it('une el parámetro repetido codes=a&codes=b antes de normalizar', async () => {
+      const dto = build({ codes: ['op01-025', 'OP01-016,op01-025'] });
+
+      expect(dto.codes).toEqual(['OP01-016', 'OP01-025']);
+      expect(await validate(dto)).toHaveLength(0);
+
+    });
+
+
+    it('rechaza un código de más de 20 caracteres', async () => {
+      const errors = await validate(build({ codes: `OP01-016,${'A'.repeat(21)}` }));
+
+      expect(errors).toHaveLength(1);
+      expect(errors[0].constraints).toEqual({ maxLength: 'cada código de codes debe tener como máximo 20 caracteres' });
+
+    });
+
+
+    it('rechaza combinar codes con code', async () => {
+      const errors = await validate(build({ codes: 'OP01-016', code: 'OP01-025' }));
+
+      expect(errors).toHaveLength(1);
+      expect(errors[0].property).toBe('codes');
+      expect(errors[0].constraints).toEqual({ isExclusiveWith: 'codes no se puede combinar con code' });
+
+    });
+
+  });
+
   describe('q', () => {
 
     it.each([

@@ -1,6 +1,6 @@
 import { ApiPropertyOptional } from "@nestjs/swagger";
 import { Transform, Type } from "class-transformer";
-import { IsIn, IsInt, IsOptional, IsString, Max, MaxLength, Min } from "class-validator";
+import { ArrayMaxSize, IsArray, IsIn, IsInt, IsOptional, IsString, Max, MaxLength, Min } from "class-validator";
 import { IsExclusiveWith, IsGreaterOrEqualTo } from "../../common/validators/cost-range.validators";
 import { CardType } from "../enums/card-type.enum";
 
@@ -50,6 +50,24 @@ export class ListCardsDto {
   @IsString({ message: 'code debe ser un texto' })
   @MaxLength(20, { message: 'code debe tener como máximo $constraint1 caracteres' })
   code?: string;
+
+
+
+  @ApiPropertyOptional({ type: String, example: 'OP01-016,OP01-025', description: 'Hasta 50 códigos exactos separados por coma' })
+  @IsOptional()
+  @Transform(({ value }: { value: unknown }) => {
+    const raw = Array.isArray(value) ? value.join(',') : value;
+    if (typeof raw !== 'string')
+        return raw;
+    const codes = [...new Set(raw.split(',').map(code => code.trim().toUpperCase()).filter(Boolean))].sort();
+    return codes.length ? codes : undefined;
+  })
+  @IsArray({ message: 'codes debe ser una lista de códigos' })
+  @ArrayMaxSize(50, { message: 'codes debe tener como máximo $constraint1 códigos' })
+  @IsString({ each: true, message: 'cada código de codes debe ser un texto' })
+  @MaxLength(20, { each: true, message: 'cada código de codes debe tener como máximo $constraint1 caracteres' })
+  @IsExclusiveWith(['code'], { message: 'codes no se puede combinar con code' })
+  codes?: string[];
 
 
 
