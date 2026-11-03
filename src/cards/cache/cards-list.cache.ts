@@ -9,10 +9,12 @@ import { createHash } from 'crypto';
 @Injectable()
 export class CardsListCache {
 
-    private readonly logger      = new Logger(CardsListCache.name);
-    private readonly VERSION_KEY = 'cards:list:version';
+    private readonly SCHEMA_VERSION = 3;
+    private readonly logger         = new Logger(CardsListCache.name);
+    private readonly VERSION_KEY    = 'cards:list:version';
+
     private readonly ttl: number;
-    private readonly SCHEMA_VERSION = 2;
+
 
 
 
@@ -70,7 +72,7 @@ export class CardsListCache {
 
 
 
-    private async buildKey({ page, limit, q, name, code, cost, costMin, costMax, trait, color, type }: ListCardsDto): Promise<string> {
+    private async buildKey({ page, limit, q, name, code, codes, cost, costMin, costMax, trait, color, type }: ListCardsDto): Promise<string> {
         const version = await this.redis.get(this.VERSION_KEY) ?? '0';
         const payload = JSON.stringify(
             { 
@@ -78,7 +80,8 @@ export class CardsListCache {
                 limit, 
                 q: q?.toLowerCase(), 
                 name: name?.toLowerCase(), 
-                code,  
+                code,
+                codes: codes?.join(','),  
                 cost, 
                 costMin, 
                 costMax, 
