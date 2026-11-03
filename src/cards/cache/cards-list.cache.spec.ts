@@ -48,7 +48,7 @@ describe('CardsListCache', () => {
   it('guarda la key con TTL', async () => {
     await cache.set(query, result);
 
-    const [key] = await redis.keys('cards:list:s2:v0:*');
+    const [key] = await redis.keys('cards:list:s3:v0:*');
     const ttl   = await redis.ttl(key);
 
     expect(ttl).toBeGreaterThan(0);
@@ -190,6 +190,25 @@ describe('CardsListCache', () => {
 
 
 
+  it('comparte key entre queries con los mismos codes', async () => {
+    await cache.set({ ...query, codes: ['OP01-016', 'OP01-025'] }, result);
+
+    expect(await cache.get({ ...query, codes: ['OP01-016', 'OP01-025'] })).toEqual(result);
+
+  });
+
+
+
+  it('no comparte key entre queries con distintos codes', async () => {
+    await cache.set({ ...query, codes: ['OP01-016'] }, result);
+
+    expect(await cache.get({ ...query, codes: ['OP01-025'] })).toBeNull();
+    expect(await cache.get(query)).toBeNull();
+
+  });
+
+
+
   it('invalidate hace que lo guardado antes ya no se encuentre', async () => {
     await cache.set(query, result);
     await cache.invalidate();
@@ -206,7 +225,7 @@ describe('CardsListCache', () => {
 
     await cache.set(query, result);
 
-    const [key] = await redis.keys('cards:list:s2:v0:*');
+    const [key] = await redis.keys('cards:list:s3:v0:*');
     await redis.set(key, 'no-es-json');
 
     expect(await cache.get(query)).toBeNull();
