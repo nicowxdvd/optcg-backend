@@ -1,11 +1,14 @@
-import { Controller, Post, UseInterceptors } from '@nestjs/common';
+import { Controller, Post, UseGuards, UseInterceptors } from '@nestjs/common';
 import { IdempotencyInterceptor } from '../common/idempotency/idempotency.interceptor';
-import { ApiHeader } from '@nestjs/swagger';
+import { ApiHeader, ApiSecurity } from '@nestjs/swagger';
 import { SyncCardsResponseDto } from './dto/sync-cards-response.dto';
 import { SyncService } from './sync.service';
 import { Throttle } from '@nestjs/throttler';
+import { ApiKeyGuard } from '../common/auth/api-key.guard';
 
 @Controller('sync')
+@UseGuards(ApiKeyGuard)
+@ApiSecurity('api-key')
 export class SyncController {
 
     constructor(
