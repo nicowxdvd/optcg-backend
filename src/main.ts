@@ -22,6 +22,7 @@ async function bootstrap() {
   const config = new DocumentBuilder()
                       .setTitle('OPTCG API')
                       .setVersion('1.0')
+                      .addApiKey({ type: 'apiKey', name: 'x-api-key', in: 'header' }, 'api-key')
                       .build();
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('docs', app, document);
