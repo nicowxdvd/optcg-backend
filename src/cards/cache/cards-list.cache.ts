@@ -90,7 +90,6 @@ export class CardsListCache {
                 type 
             });
         const hash    = createHash('sha256').update(payload).digest('hex');
-
         return `cards:list:s${this.SCHEMA_VERSION}:v${version}:${hash}`;
     }
 }
